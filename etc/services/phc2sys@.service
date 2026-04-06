@@ -7,7 +7,7 @@ Before=time-sync.target
 
 [Service]
 Type=simple
-ExecStart=/usr/sbin/phc2sys -w -s %I -f /etc/linuxptp/ptp4l.conf
+ExecStart=/usr/bin/taskset -c 12 /usr/sbin/phc2sys -w -s %I -f /etc/linuxptp/ptp4l.conf
 
 [Install]
 WantedBy=multi-user.target
