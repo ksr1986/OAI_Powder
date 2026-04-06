@@ -52,6 +52,28 @@ sudo apt update && sudo apt install -y \
   ppp
 
 
+# Configure CPU isolation via GRUB for real-time OAI/XRAN performance on R760 (cudu node).
+# CPU allocation:
+#   0,2,4       -> XRAN DPDK usage
+#   6           -> OAI ru_thread
+#   8           -> OAI L1_rx_thread
+#   10          -> OAI L1_tx_thread
+#   1,3,5,7,9,11,13 -> OAI nr-softmodem
+#   12          -> ptp4l
+#   14-15       -> kernel / kthreads
+# NOTE: These changes take effect after the next reboot.
+GRUB_PARAMS="systemd.unified_cgroup_hierarchy=false quiet splash intel_idle.max_cstate=0 mitigations=off usbcore.autosuspend=-1 intel_iommu=on iommu=pt selinux=0 enforcing=0 nmi_watchdog=0 softlockup_panic=0 audit=0 skew_tick=1 isolcpus=managed_irq,domain,0-13 nohz_full=0-13 rcu_nocbs=0-13 kthread_cpus=14-15 rcu_nocb_poll nosoftlockup default_hugepagesz=1GB hugepagesz=1G hugepages=20"
+
+GRUB_FILE=/etc/default/grub
+if grep -q "isolcpus" "$GRUB_FILE"; then
+  echo "CPU isolation already set in GRUB, skipping."
+else
+  sudo sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"${GRUB_PARAMS}\"|" "$GRUB_FILE"
+  sudo update-grub
+  echo "GRUB updated for CPU isolation. A reboot is required for isolcpus to take effect."
+fi
+
+
 #Setup DPDK:
 
 cd $SRCDIR
