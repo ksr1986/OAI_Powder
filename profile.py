@@ -28,6 +28,7 @@ WIP...
 
 on `cudu` run:
 ```
+sudo /var/tmp/openairinterface5g/ran_build/build/nr-softmodem -O /var/tmp/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf --sa
 # TODO: Replace with OAI gNB start command
 # [SRSRAN - DISABLED] sudo /var/tmp/srsRAN_Project/nbuild/apps/gnb/gnb -c /var/tmp/etc/srsran/gnb_ru_ho_test.yml -c /var/tmp/etc/srsran/e2.yml
 ```
@@ -61,6 +62,7 @@ at+qeng="servingcell"
 After attach, UE should be able to ping gateway at 10.45.0.1, and the public IP address of the `teleop` node.
 
 # TODO: Update config file paths for OAI deployment
+# OAI gNB conf file: `/var/tmp/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf`
 # [SRSRAN - DISABLED] PCIs for the O-RUs can be found in `/var/tmp/etc/srsran/gnb_ru_ho_test.yml` along with other RAN configuration.
 # [SRSRAN - DISABLED] E2 setup is at `/var/tmp/etc/srsran/e2.yml`. (Connects to RIC in separate O-RAN experiment for now.)
 

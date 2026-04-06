@@ -99,5 +99,10 @@ fi
 sudo $BINDIR/sriov_conf.sh
 echo "SR-IOV configured: VFs eno12408v0 (U-plane) and eno12408v1 (C-plane) bound to vfio-pci"
 
+# Copy OAI gNB conf file to runtime location
+sudo mkdir -p /var/tmp/etc/oai
+sudo cp $CFGDIR/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf /var/tmp/etc/oai/
+echo "OAI gNB conf file deployed to /var/tmp/etc/oai/"
+
 touch $SRCDIR/oai-setup-complete
 echo "OAI gNB setup complete: DPDK, libxran, OAI gNB, and SR-IOV fronthaul interfaces are ready"

@@ -1,14 +1,13 @@
 [Unit]
-Description=SRS gNB
+Description=OAI gNB
 After=network.target
 
 [Service]
 Type=simple
-# hmm, need a user to supply $HOME or $XDG_CONFIG_HOME for UHD
 Environment=HOME=/root
 Restart=always
 RestartSec=1
-ExecStart=/var/tmp/srsRAN_Project/build/apps/gnb/gnb -c /var/tmp/etc/srsran/gnb_ru_vvdn_tdd_n48_40mhz_mimo_ho.yml
+ExecStart=/var/tmp/openairinterface5g/ran_build/build/nr-softmodem -O /var/tmp/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf --sa
 StandardOutput=truncate:/var/log/gnb-stdout.log
 StandardError=truncate:/var/log/gnb-stdout.log
 
