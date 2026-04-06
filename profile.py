@@ -66,14 +66,6 @@ After attach, UE should be able to ping gateway at 10.45.0.1, and the public IP 
 # [SRSRAN - DISABLED] PCIs for the O-RUs can be found in `/var/tmp/etc/srsran/gnb_ru_ho_test.yml` along with other RAN configuration.
 # [SRSRAN - DISABLED] E2 setup is at `/var/tmp/etc/srsran/e2.yml`. (Connects to RIC in separate O-RAN experiment for now.)
 
-To initiate handover, run the following on `cudu`:
-
-```
-/local/repository/bin/handover bru2
-```
-
-...replace `bru2` with `bru1` to handover back to the other O-RU.
-
 If UE cannot see/attach to cell; need to check `ptp4l` and `phc2sys` status on `cudu`, and then check status of O-RU.
 
 

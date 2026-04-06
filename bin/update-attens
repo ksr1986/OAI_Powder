@@ -4,8 +4,6 @@ ATTEN_SCRIPT=/local/repository/bin/atten
 RU=$1
 ATTEN=$2
 BRU1_PATHS=(29 30 61 62 93 94 125 126 31 32 63 64 95 96 127 128)
-BRU2_PATHS=(25 57 89 121 26 58 90 122 27 59 91 123 28 60 92 124)
-ALL_PATHS=( ${BRU1_PATHS} ${BRU2_PATHS} )
 
 usage() {
     cat <<EOF
@@ -14,7 +12,7 @@ usage:
         show this help message
     update-attens <ruid> <attenval>
         set all matrix paths between <ruid> and UE to <attenval>
-        <ruid> can be bru1, bru2, or both
+        <ruid> must be bru1
         <attenval> and be in integer in [0..95]
         actual attenuation is 30+<attenval> dB
 EOF
@@ -47,12 +45,6 @@ case $RU in
         ;;
     bru1)
         set_paths ${BRU1_PATHS[@]}
-        ;;
-    bru2)
-        set_paths ${BRU2_PATHS[@]}
-        ;;
-    both)
-        set_paths ${ALL_PATHS[@]}
         ;;
     *)
         echo "invalid arg"; usage; exit 1

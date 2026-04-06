@@ -11,8 +11,8 @@ usage:
     handover -h
         show this help message
     handover <dst_ru>
-        handover UE to <dst_ru> using 5 dB atten steps for <dwell_time> seconds
-        <dst_ru> can be bru1 or bru2 (assumes UE is currently attached via the other RU)
+        handover UE to <dst_ru> using 5 dB atten steps
+        <dst_ru> must be bru1 (only one RU in this deployment)
 EOF
 }
 
@@ -20,15 +20,11 @@ if [ -z $DST_RU ]; then
   usage; exit 1
 fi
 
-if [ $DST_RU != "bru1" ] && [ $DST_RU != "bru2" ]; then
-  echo "invalid dst_ru"; usage; exit 1
+if [ $DST_RU != "bru1" ]; then
+  echo "invalid dst_ru: only bru1 is available"; usage; exit 1
 fi
 
-if [ $DST_RU == "bru1" ]; then
-  SRC_RU="bru2"
-else
-  SRC_RU="bru1"
-fi
+SRC_RU="bru1"
 
 handover() {
   echo "handing over UE to $DST_RU..."
