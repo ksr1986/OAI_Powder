@@ -7,7 +7,7 @@ Type=simple
 Environment=HOME=/root
 Restart=always
 RestartSec=1
-ExecStart=/var/tmp/openairinterface5g/ran_build/build/nr-softmodem -O /var/tmp/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf --sa
+ExecStart=/var/tmp/openairinterface5g/cmake_targets/ran_build/build/nr-softmodem -O /var/tmp/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf --sa
 StandardOutput=truncate:/var/log/gnb-stdout.log
 StandardError=truncate:/var/log/gnb-stdout.log
 

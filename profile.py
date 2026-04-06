@@ -90,7 +90,7 @@ COMP_MANAGER_ID = "urn:publicid:IDN+emulab.net+authority+cm"
 # DEFAULT_SRSRAN_HASH = "cdc93a60920dfbb2727910f84966068b8e75004d"  # late sept 2025 [SRSRAN - DISABLED]
 OPEN5GS_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "deploy-open5gs.sh")
 # SRSRAN_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "deploy-srsran.sh")  # [SRSRAN - DISABLED]
- OAI_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "deploy-oai.sh")
+OAI_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "setup-oai.sh")
 
 NODE_IDS = {
     "ru1": "vmpru-b48-1",
@@ -126,11 +126,11 @@ for k, v in MATRIX_GRAPH.items():
 
 pc = portal.Context()
 
- node_types = [
-     ("d760p", "Emulab, d760"),
-     ("d430", "Emulab, d430"),
-     ("d740", "Emulab, d740"),
- ]
+node_types = [
+    ("d760p", "Emulab, d760"),
+    ("d430", "Emulab, d430"),
+    ("d740", "Emulab, d740"),
+]
 # pc.defineParameter(
 #     name="sdr_nodetype",
 #     description="Type of compute node paired with the SDRs",
@@ -220,8 +220,8 @@ cn_link.setNoBandwidthShaping()
 cn_link.addInterface(cn_if)
 cn_node.addService(pg.Execute(shell="bash", command=OPEN5GS_DEPLOY_SCRIPT))
 cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/install-improved-iperf3.sh"))
-cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/start-iperf.sh"))
-cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/install-vsftpd.sh.sh"))
+cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/start-iperf.pl"))
+cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/install-vsftpd.sh"))
 
 node_name = "cudu"
 cudu = request.RawPC(node_name)
@@ -255,9 +255,7 @@ duru1ofh.component_id = "eth1"
 #     cmd = "{} '{}'".format(SRSRAN_DEPLOY_SCRIPT, srsran_hash)
 
 # Add OAI gNB deploy service here
-
-cmd = "{} '{}'".format(OAI_DEPLOY_SCRIPT)
-cudu.addService(pg.Execute(shell="bash", command=cmd))
+cudu.addService(pg.Execute(shell="bash", command=OAI_DEPLOY_SCRIPT))
 cudu.addService(pg.Execute(shell="bash", command="sudo /local/repository/bin/setup-ptp.sh"))
 cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-attens bru1 0"))
 #cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-attens bru2 95"))

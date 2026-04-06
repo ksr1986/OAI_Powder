@@ -90,7 +90,7 @@ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib64/pkgconfig/
 ./build_oai --gNB --ninja -t oran_fhlib_5g --cmake-opt -Dxran_LOCATION=$SRCDIR/phy/fhi_lib/lib
 
 #Check to run if things are installed properly
-if ! ldd $SRCDIR/openairinterface5g/ran_build/build/liboran_fhlib_5g.so; then
+if ! ldd $SRCDIR/openairinterface5g/cmake_targets/ran_build/build/liboran_fhlib_5g.so; then
     echo "ERROR: liboran_fhlib_5g.so failed ldd check; OAI build may be incomplete."
     exit 1
 fi
