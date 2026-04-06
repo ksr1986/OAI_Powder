@@ -49,6 +49,7 @@ sudo apt update && sudo apt install -y \
   libsctp-dev \
   libyaml-cpp-dev \
   libgtest-dev \
+  linuxptp \
   ppp
 
 
