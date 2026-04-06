@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# This script is used to start and stop the UE services
+services=("quectel-control.service" "quectel-cm.service" "ue-metrics.service")
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 {start|stop|status}"
+    exit 1
+fi
+
+if [ "$1" == "start" ]; then
+    echo "Starting UE services..."
+    # Start the services
+    sudo systemctl start ${services[@]}
+elif [ "$1" == "stop" ]; then
+    echo "Stopping UE services..."
+    # Stop the services
+    sudo systemctl stop ${services[@]}
+elif [ "$1" == "status" ]; then
+    # Check the status of the services
+    sudo systemctl status ${services[@]}
+else
+    echo "Usage: $0 {start|stop|status}"
+    exit 1
+fi

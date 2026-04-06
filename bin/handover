@@ -1,0 +1,41 @@
+#!/bin/bash
+UPDATE_ATTENS_SCRIPT=/local/repository/bin/update-attens
+DST_RU=$1
+ATTEN_STEP=5
+START_ATTEN_SRC=15
+START_ATTEN_DST=60
+
+usage() {
+    cat <<EOF
+usage:
+    handover -h
+        show this help message
+    handover <dst_ru>
+        handover UE to <dst_ru> using 5 dB atten steps for <dwell_time> seconds
+        <dst_ru> can be bru1 or bru2 (assumes UE is currently attached via the other RU)
+EOF
+}
+
+if [ -z $DST_RU ]; then
+  usage; exit 1
+fi
+
+if [ $DST_RU != "bru1" ] && [ $DST_RU != "bru2" ]; then
+  echo "invalid dst_ru"; usage; exit 1
+fi
+
+if [ $DST_RU == "bru1" ]; then
+  SRC_RU="bru2"
+else
+  SRC_RU="bru1"
+fi
+
+handover() {
+  echo "handing over UE to $DST_RU..."
+  for atten in $(seq $START_ATTEN_SRC $ATTEN_STEP $START_ATTEN_DST); do
+    $UPDATE_ATTENS_SCRIPT $SRC_RU $atten
+    $UPDATE_ATTENS_SCRIPT $DST_RU $((START_ATTEN_SRC + START_ATTEN_DST - atten))
+  done
+}
+
+handover

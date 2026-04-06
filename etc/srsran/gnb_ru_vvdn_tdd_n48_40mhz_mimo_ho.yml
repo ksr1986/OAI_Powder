@@ -1,0 +1,163 @@
+# =============================================================================
+# SRSRAN CONFIGURATION DISABLED - Preserved for reference. To be replaced by OAI config.
+# TODO: Add OAI gNB configuration file here.
+# =============================================================================
+gnb_id: 411
+gnb_id_bit_length: 32
+
+cu_cp:
+  amf:
+    addr: 192.168.1.1
+    bind_addr: 192.168.1.2
+    supported_tracking_areas:
+      - tac: 1                        
+        plmn_list:
+          - plmn: "99999"
+            tai_slice_support_list:
+              - sst: 1    
+                sd: 1
+
+  inactivity_timer: 7200
+  mobility:
+    trigger_handover_from_measurements: true
+
+    cells:
+      - nr_cell_id: 0x19B0
+        periodic_report_cfg_id: 1
+        ncells:
+          - nr_cell_id: 0x19B1
+            report_configs: [ 2 ]
+      - nr_cell_id: 0x19B1
+        periodic_report_cfg_id: 1
+        ncells:
+          - nr_cell_id: 0x19B0
+            report_configs: [ 2 ]
+    report_configs:
+      - report_cfg_id: 1
+        report_type: periodical
+        report_interval_ms: 480
+      - report_cfg_id: 2
+        report_type: event_triggered
+        event_triggered_report_type: a3
+        meas_trigger_quantity: rsrp
+        meas_trigger_quantity_offset_db: 3
+        hysteresis_db: 0
+        time_to_trigger_ms: 100
+
+cells:
+  -
+    pci: 1
+    dl_arfcn: 641668
+    prach:
+      prach_root_sequence_index: 1
+  -
+    pci: 4
+    dl_arfcn: 641668
+    prach:
+      prach_root_sequence_index: 7
+
+ru_ofh:
+  t1a_max_cp_dl: 470
+  t1a_min_cp_dl: 285
+  t1a_max_cp_ul: 336
+  t1a_min_cp_ul: 285
+  t1a_max_up: 345
+  t1a_min_up: 294
+  ta4_max: 180
+  ta4_min: 50
+
+  is_prach_cp_enabled: true
+  compr_method_ul: bfp
+  compr_bitwidth_ul: 9
+  compr_method_dl: bfp
+  compr_bitwidth_dl: 9
+  compr_method_prach: bfp
+  compr_bitwidth_prach: 9
+  enable_ul_static_compr_hdr: true
+  enable_dl_static_compr_hdr: true
+  ru_reference_level_dBFS: -8
+  subcarrier_rms_backoff_dB: 0
+  cells:                               
+    - network_interface: 0000:43:00.1
+      ru_mac_addr: 98:ae:71:04:90:c7
+      du_mac_addr: 30:3e:a7:1a:99:49
+      vlan_tag_cp: 28
+      vlan_tag_up: 28
+      prach_port_id: [4, 5]
+      dl_port_id: [0, 1]
+      ul_port_id: [0, 1]
+    - network_interface: 0000:43:00.2
+      ru_mac_addr: 98:ae:71:04:90:c3
+      du_mac_addr: 30:3e:a7:1a:99:4a
+      vlan_tag_cp: 29
+      vlan_tag_up: 29
+      prach_port_id: [4, 5]
+      dl_port_id: [0, 1]
+      ul_port_id: [0, 1]
+
+cell_cfg:
+  dl_arfcn: 641668
+  band: 48
+  channel_bandwidth_MHz: 40
+  common_scs: 30
+  plmn: "99999"
+  tac: 1
+  pci: 1
+  nof_antennas_dl: 2
+  nof_antennas_ul: 2
+  ssb:
+    ssb_block_power_dbm: 12
+    ssb_period: 10
+  prach:
+    prach_config_index: 159
+    prach_root_sequence_index: 0
+    zero_correlation_zone: 0
+    prach_frequency_start: 0
+  # pucch:
+  #   sr_period_ms: 20
+  csi:
+    csi_rs_period: 20
+  pdsch:
+    mcs_table: qam256
+    olla_target_bler: 0.1
+  pusch:
+    mcs_table: qam256
+    p0_nominal_with_grant: -90
+    olla_target_bler: 0.1
+  tdd_ul_dl_cfg:
+    dl_ul_tx_period: 10
+    nof_dl_slots: 7
+    nof_dl_symbols: 10
+    nof_ul_symbols: 2
+    nof_ul_slots: 2
+  # srs:
+  #   srs_period_ms: 40 
+
+hal:
+   eal_args: "--lcores (0-3)@(4-7)"
+
+expert_execution:
+  affinities:
+    main_pool_cpus: 8,9,10,11,12,13,14,15
+
+log:
+  filename: /var/log/gnb.log
+  all_level: warning
+  rrc_level: debug
+
+metrics:
+  enable_json: true
+  autostart_stdout_metrics: true
+  enable_log: true
+
+remote_control:
+  enabled: true
+  bind_addr: 0.0.0.0
+  port: 8001
+
+pcap:
+  mac_enable: false
+  mac_type: dlt
+  mac_filename: /tmp/gnb_mac.pcap
+  ngap_enable: false
+  ngap_filename: /tmp/gnb_ngap.pcap

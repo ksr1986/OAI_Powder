@@ -1,0 +1,19 @@
+[Unit]
+Description=UE metrics service
+Requires=dev-ttyUSB2.device
+After=dev-ttyUSB2.device
+After=network.target
+After=quectel-control.service
+
+[Service]
+Environment=PYTHONUNBUFFERED=1
+Type=simple
+Restart=always
+RestartSec=1
+ExecStart=/var/tmp/ue_metrics.py
+StandardOutput=truncate:/var/log/ue-metrics.log
+StandardError=truncate:/var/log/ue-metrics.log
+
+
+[Install]
+WantedBy=multi-user.target

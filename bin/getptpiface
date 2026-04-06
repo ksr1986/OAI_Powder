@@ -1,0 +1,53 @@
+#!/usr/bin/perl -w
+
+use English;
+use Data::Dumper;
+use XML::Simple;
+
+my $MANIFEST = "/tmp/mani.xml";
+my $me = `hostname -s`;
+chomp($me);
+
+system("/usr/bin/geni-get manifest > $MANIFEST");
+if ($?) {
+    print STDERR "Could not get experiment manifest!\n";
+    exit(1);
+}
+
+my %xmloptions = ('ForceArray' => [ 'interface' ], 'SuppressEmpty' => undef);
+my $ref = XMLin($MANIFEST, %xmloptions);
+
+my $ptpiface;
+FOUND: foreach my $node (@{$ref->{'node'}}) {
+    next if ($node->{'client_id'} ne $me);
+
+    foreach $iface (@{$node->{'interface'}}) {
+	if (exists($iface->{'emulab:ptp'})) {
+	    $ptpiface = $iface;
+	    last FOUND;
+	}
+    }
+}
+
+my $iface = "";
+if ($ptpiface) {
+    my $mac = $ptpiface->{'mac_address'};
+    if ($mac && -x "/usr/local/etc/emulab/findif") {
+	$iface = `/usr/local/etc/emulab/findif $mac`;
+	chomp($iface);
+    }
+}
+exit(1)
+    if (!$iface);
+
+# XXX if the interface is a vlan device, use the underlying physical interface
+if ($iface =~ /^vlan/) {
+    my $info = `ip -br link show $iface 2>/dev/null`;
+    chomp($info);
+    if ($info && $info =~ /^$iface\@(\S+)/) {
+       $iface = $1;
+    }
+}
+
+print "$iface\n";
+exit(0);

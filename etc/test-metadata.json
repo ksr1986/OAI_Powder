@@ -1,0 +1,35 @@
+{
+    "carrier_frequency_mhz": 3518.22,
+    "effective_transmission_bandwidth_mhz": 20.0,
+    "number_of_total_rbs": 51,
+    "duplex_mode": "TDD",
+    "sub_carrier_spacing_khz": 30,
+    "cyclic_prefix_length": "Normal",
+    "slot_length_ms": 0.5,
+    "number_of_supported_mimo_layers": 2,
+    "antenna_configuration": "2T1R",
+    "transmit_power_dbm": 37.0,
+    "antenna_gain_dbi": "N/A",
+    "dl_ul_ratio": "6:3",
+    "test_ue_position": "N/A",
+    "deployment_scenario": "N/A",
+    "test_and_measurement_equipment": [
+        "Programmable RF attenuator matrix (insert model / fw)",
+        "POWDER TOTA (insert version)",
+        "Quectel RM520Q-GL COTS UE (insert FW version)"
+    ],
+    "suts": [
+        {
+            "type": "Benetel RAN650 band 78 O-RU",
+            "sw_version": "RAN650-1v1.0.4-dda1bf5",
+        },
+        {
+            "type": "OAI gNB O-CU and O-DU (TODO: update sw_version)",
+            "sw_version": "TBD",
+        },
+        {
+            "type": "Open5GS 5G core network",
+            "sw_version": "v2.7.1",
+        },
+    ]
+}
