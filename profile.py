@@ -87,7 +87,7 @@ OAI_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "setup-oai.sh")
 NODE_IDS = {
     "ru1": "vmpru-b48-1",
  #   "ru2": "vmpru-b48-2",
-    "ue1": "nuc5",
+    "ue1": "nuc6",
  #   "ue2": "nuc6",
 }
 MATRIX_GRAPH = {
