@@ -203,7 +203,7 @@ request = pc.makeRequestRSpec()
 node_name = "cn5g"
 cn_node = request.RawPC(node_name)
 cn_node.component_manager_id = COMP_MANAGER_ID
-cn_node.hardware_type = "d740"  # auto-select any available d740
+cn_node.hardware_type = "d710"  # auto-select any available d710
 cn_node.disk_image = UBUNTU_IMG
 cn_if = cn_node.addInterface("{}-if".format(node_name))
 cn_if.addAddress(pg.IPv4Address("192.168.1.1", "255.255.255.0"))
