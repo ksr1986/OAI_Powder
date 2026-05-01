@@ -121,10 +121,9 @@ for k, v in MATRIX_GRAPH.items():
 pc = portal.Context()
 
 node_types = [
-    ("d760p", "Emulab, d760"),
-    ("d430", "Emulab, d430"),
     ("d740", "Emulab, d740"),
-]
+    ("d760p", "Emulab, d760"),
+    ("d430", "Emulab, d430")]
 # pc.defineParameter(
 #     name="sdr_nodetype",
 #     description="Type of compute node paired with the SDRs",
@@ -154,7 +153,7 @@ pc.defineParameter(
     typ=portal.ParameterType.STRING,
 #    defaultValue="pc24-fort",
      #defaultValue=node_types[0],
-     defaultValue="d760p",
+     defaultValue="d740",
      #legalValues=node_types
 )
 
