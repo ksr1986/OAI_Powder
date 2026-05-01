@@ -85,9 +85,11 @@ OPEN5GS_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "deploy-open5gs.sh")
 OAI_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "setup-oai.sh")
 
 NODE_IDS = {
-    "ru1": "vmpru-b48-1",
+    #"ru1": "vmpru-b48-1",
+    "ru1": "bru-650-1",
  #   "ru2": "vmpru-b48-2",
-    "ue1": "nuc6",
+    #"ue1": "nuc6",
+    "ue1": "nuc1",
  #   "ue2": "nuc6",
 }
 MATRIX_GRAPH = {
