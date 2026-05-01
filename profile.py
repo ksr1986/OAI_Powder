@@ -141,21 +141,19 @@ node_types = [
 #     legalValues=node_types
 # )
 
-pc.defineParameter(
-    name="cn_compute_id",
-    description="Component ID for core network compute node",
-    typ=portal.ParameterType.STRING,
-    defaultValue="pc20-meb",
-)
+# pc.defineParameter(
+#     name="cn_compute_id",
+#     description="Component ID for core network compute node",
+#     typ=portal.ParameterType.STRING,
+#     defaultValue="pc20-meb",
+# )
 
-pc.defineParameter(
-    name="cudu_compute_id",
-    description="Component ID for compute node connected to RU",
-    typ=portal.ParameterType.STRING,
-    defaultValue="pc24-fort",
-    # defaultValue=node_types[0],
-    # legalValues=node_types
-)
+# pc.defineParameter(
+#     name="cudu_compute_id",
+#     description="Component ID for compute node connected to RU",
+#     typ=portal.ParameterType.STRING,
+#     defaultValue="pc24-fort",
+# )
 
 # pc.defineParameter(
 #     name="vlan_id_ru1",
@@ -205,7 +203,7 @@ request = pc.makeRequestRSpec()
 node_name = "cn5g"
 cn_node = request.RawPC(node_name)
 cn_node.component_manager_id = COMP_MANAGER_ID
-cn_node.component_id = params.cn_compute_id
+cn_node.hardware_type = "d740"  # auto-select any available d740
 cn_node.disk_image = UBUNTU_IMG
 cn_if = cn_node.addInterface("{}-if".format(node_name))
 cn_if.addAddress(pg.IPv4Address("192.168.1.1", "255.255.255.0"))
@@ -220,7 +218,7 @@ cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/insta
 node_name = "cudu"
 cudu = request.RawPC(node_name)
 cudu.component_manager_id = COMP_MANAGER_ID
-cudu.component_id = params.cudu_compute_id
+cudu.hardware_type = "d760p"  # auto-select any available d760p
 # [SRSRAN - DISABLED] cudu.disk_image = UBUNTU_DPDK_IMG if params.use_dpdk else (params.sdr_compute_image if params.sdr_compute_image else UBUNTU_IMG)
 
 #We can install the regular ubuntu image and then install DPDK as part of the OAI deployment script.
