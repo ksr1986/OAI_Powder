@@ -86,10 +86,10 @@ OAI_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "setup-oai.sh")
 
 NODE_IDS = {
     #"ru1": "vmpru-b48-1",
-    "ru1": "bru-650-3",
+    "ru1": "bru-650-5",
  #   "ru2": "vmpru-b48-2",
     #"ue1": "nuc6",
-    "ue1": "nuc8",
+    "ue1": "nuc16",
  #   "ue2": "nuc6",
 }
 MATRIX_GRAPH = {
@@ -121,7 +121,7 @@ for k, v in MATRIX_GRAPH.items():
 pc = portal.Context()
 
 node_types = [
-    ("d760p", "Emulab, d760p"),
+    ("d760p", "Emulab, d760"),
     ("d430", "Emulab, d430"),
     ("d740", "Emulab, d740"),
 ]
