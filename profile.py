@@ -157,12 +157,12 @@ pc.defineParameter(
     # legalValues=node_types
 )
 
-pc.defineParameter(
-    name="vlan_id_ru1",
-    description="VLAN ID for RU1",
-    typ=portal.ParameterType.INTEGER,
-    defaultValue=28,
-)
+# pc.defineParameter(
+#     name="vlan_id_ru1",
+#     description="VLAN ID for RU1",
+#     typ=portal.ParameterType.INTEGER,
+#     defaultValue=28,
+# )
 
 #pc.defineParameter(
 #    name="vlan_id_ru2",
