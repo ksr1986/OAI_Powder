@@ -153,15 +153,15 @@ pc.defineParameter(
     description="Component ID for compute node connected to RU",
     typ=portal.ParameterType.STRING,
     defaultValue="pc24-fort",
-     #defaultValue=node_types[0],
-     #legalValues=node_types
+    # defaultValue=node_types[0],
+    # legalValues=node_types
 )
 
 pc.defineParameter(
     name="vlan_id_ru1",
     description="VLAN ID for RU1",
     typ=portal.ParameterType.INTEGER,
-    defaultValue=28,
+    defaultValue=2,
 )
 
 #pc.defineParameter(
