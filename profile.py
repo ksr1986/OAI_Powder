@@ -121,7 +121,7 @@ for k, v in MATRIX_GRAPH.items():
 pc = portal.Context()
 
 node_types = [
-    ("d760p", "Emulab, d760"),
+    ("d760p", "Emulab, d760p"),
     ("d430", "Emulab, d430"),
     ("d740", "Emulab, d740"),
 ]
