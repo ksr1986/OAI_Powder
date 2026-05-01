@@ -153,8 +153,9 @@ pc.defineParameter(
     description="Component ID for compute node connected to RU",
     typ=portal.ParameterType.STRING,
 #    defaultValue="pc24-fort",
-     defaultValue=node_types[0],
-     legalValues=node_types
+     #defaultValue=node_types[0],
+     defaultValue="d760p",
+     #legalValues=node_types
 )
 
 pc.defineParameter(
