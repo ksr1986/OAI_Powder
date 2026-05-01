@@ -161,7 +161,7 @@ pc.defineParameter(
     name="vlan_id_ru1",
     description="VLAN ID for RU1",
     typ=portal.ParameterType.INTEGER,
-    defaultValue=2,
+    defaultValue=28,
 )
 
 #pc.defineParameter(
