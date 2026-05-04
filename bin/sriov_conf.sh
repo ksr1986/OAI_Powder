@@ -21,8 +21,17 @@ MAX_RING_BUFFER_SIZE=$(ethtool -g $IF_NAME|grep "maxi" -A1|awk '/RX/{print $2}')
 MTU=8192
 DU_U_PLANE_MAC_ADD=00:11:22:33:44:68
 DU_C_PLANE_MAC_ADD=00:11:22:33:44:69
-VLAN=2
 DRIVER=vfio_pci
+
+# Read fronthaul VLAN from manifest; fall back to DEFAULT_FH_VLAN from common.sh
+echo "Reading fronthaul VLAN ID from manifest..."
+VLAN=$(get_fh_vlan_from_manifest)
+if [[ "$VLAN" =~ ^[0-9]+$ ]]; then
+    echo "Using VLAN $VLAN from manifest."
+else
+    VLAN=$DEFAULT_FH_VLAN
+    echo "Could not read VLAN from manifest. Using default: $VLAN"
+fi
 
 ethtool -G $IF_NAME rx $MAX_RING_BUFFER_SIZE tx $MAX_RING_BUFFER_SIZE
 ip link set $IF_NAME mtu $MTU

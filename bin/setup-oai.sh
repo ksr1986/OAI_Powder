@@ -98,6 +98,7 @@ git apply $SRCDIR/openairinterface5g/cmake_targets/tools/oran_fhi_integration_pa
 
 cd $SRCDIR/phy/fhi_lib/lib
 make clean
+
 WIRELESS_SDK_TOOLCHAIN=gcc RTE_SDK=$SRCDIR/dpdk-stable-20.11.9/ XRAN_DIR=$SRCDIR/phy/fhi_lib make XRAN_LIB_SO=1
 
 if [ ! -f $SRCDIR/phy/fhi_lib/lib/build/libxran.so ]; then

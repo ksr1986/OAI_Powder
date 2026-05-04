@@ -251,6 +251,7 @@ cudu.addService(pg.Execute(shell="bash", command=OAI_DEPLOY_SCRIPT))
 cudu.addService(pg.Execute(shell="bash", command="sudo /local/repository/bin/setup-ptp.sh"))
 cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-attens bru1 0"))
 #cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-attens bru2 95"))
+cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-ru-vlan.sh"))
 
 # collect node objects for RF matrix
 matrix_nodes = {}

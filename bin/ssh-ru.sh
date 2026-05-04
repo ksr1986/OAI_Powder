@@ -10,11 +10,9 @@ if [ -z $RU ]; then
 fi
 
 if [ $RU == "1" ]; then
-  sudo ifconfig enp134s0f1 $NULL_IP
-  sudo ifconfig enp134s0f0 $HOST_IP
+  sudo ifconfig eno12409 $HOST_IP
 elif [ $RU == "2" ]; then
-  sudo ifconfig enp134s0f0 $NULL_IP
-  sudo ifconfig enp134s0f1 $HOST_IP
+  sudo ifconfig eno12409 $NULL_IP
 fi
 
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$RU_IP
