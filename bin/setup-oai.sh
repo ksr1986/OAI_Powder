@@ -14,6 +14,7 @@ sudo ifconfig eno12408 down
 sudo ifconfig eno12419 down
 
  # Get the emulab repo -- what are these repos for? Do we need them for OAI?
+if ! grep -rq "repos.emulab.net/powder" /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
   while ! wget -qO - http://repos.emulab.net/emulab.key | sudo apt-key add -
   do
       echo Failed to get emulab key, retrying
@@ -28,6 +29,9 @@ sudo ifconfig eno12419 down
   do
       echo Failed to update, retrying
   done
+else
+  echo "Emulab repo already configured, skipping."
+fi
 
 #Do we need UHD Drives?
  # sudo apt-get install -y libuhd-dev uhd-host
@@ -35,22 +39,16 @@ sudo ifconfig eno12419 down
 
  #Install Packages needed for OAI gNB
 
-sudo apt update && sudo apt install -y \
-  cmake \
-  ninja-build \
-  meson \
-  make \
-  gcc \
-  g++ \
-  iperf3 \
-  pkg-config \
-  libfftw3-dev \
-  libmbedtls-dev \
-  libsctp-dev \
-  libyaml-cpp-dev \
-  libgtest-dev \
-  linuxptp \
-  ppp
+REQUIRED_PKGS="cmake ninja-build meson make gcc g++ iperf3 pkg-config libfftw3-dev libmbedtls-dev libsctp-dev libyaml-cpp-dev libgtest-dev linuxptp ppp"
+MISSING_PKGS=()
+for pkg in $REQUIRED_PKGS; do
+    dpkg -s "$pkg" &>/dev/null || MISSING_PKGS+=("$pkg")
+done
+if [ ${#MISSING_PKGS[@]} -gt 0 ]; then
+    sudo apt update && sudo apt install -y "${MISSING_PKGS[@]}"
+else
+    echo "All required packages already installed, skipping."
+fi
 
 
 # Configure CPU isolation via GRUB for real-time OAI/XRAN performance on R760 (cudu node).
@@ -78,28 +76,54 @@ fi
 #Setup DPDK:
 
 cd $SRCDIR
-sudo apt install wget xz-utils libnuma-dev
-wget http://fast.dpdk.org/rel/dpdk-20.11.9.tar.xz
-tar xvf dpdk-20.11.9.tar.xz && cd dpdk-stable-20.11.9
-meson build
-ninja -C build
-sudo ninja -C build install
+# Install DPDK build deps if not already present
+DPDK_BUILD_PKGS="wget xz-utils libnuma-dev"
+MISSING_DPDK_PKGS=()
+for pkg in $DPDK_BUILD_PKGS; do
+    dpkg -s "$pkg" &>/dev/null || MISSING_DPDK_PKGS+=("$pkg")
+done
+[ ${#MISSING_DPDK_PKGS[@]} -gt 0 ] && sudo apt install -y "${MISSING_DPDK_PKGS[@]}"
+
+# Download and extract DPDK if not already present
+if [ ! -d $SRCDIR/dpdk-stable-20.11.9 ]; then
+    [ ! -f $SRCDIR/dpdk-20.11.9.tar.xz ] && wget http://fast.dpdk.org/rel/dpdk-20.11.9.tar.xz
+    tar xvf dpdk-20.11.9.tar.xz
+fi
+
+# Build and install DPDK if not already installed
+if ! pkg-config --exists libdpdk 2>/dev/null; then
+    cd $SRCDIR/dpdk-stable-20.11.9
+    meson build
+    ninja -C build
+    sudo ninja -C build install
+    sudo ldconfig
+else
+    echo "DPDK already installed, skipping build."
+fi
 
 
-git clone $OAI_PROJECT_REPO
-cd openairinterface5g
+if [ ! -d $SRCDIR/openairinterface5g ]; then
+    git clone $OAI_PROJECT_REPO $SRCDIR/openairinterface5g
+fi
+cd $SRCDIR/openairinterface5g
 git checkout tags/v2.4.0
 
-cd $SRCDIR
-git clone https://gerrit.o-ran-sc.org/r/o-du/phy.git 
-cd phy
-git checkout oran_f_release_v1.0
-git apply $SRCDIR/openairinterface5g/cmake_targets/tools/oran_fhi_integration_patches/F/oaioran_F.patch
+if [ ! -d $SRCDIR/phy ]; then
+    git clone https://gerrit.o-ran-sc.org/r/o-du/phy.git $SRCDIR/phy
+    cd $SRCDIR/phy
+    git checkout oran_f_release_v1.0
+    git apply $SRCDIR/openairinterface5g/cmake_targets/tools/oran_fhi_integration_patches/F/oaioran_F.patch
+else
+    echo "PHY repo already cloned, skipping."
+fi
 
-cd $SRCDIR/phy/fhi_lib/lib
-make clean
-
-WIRELESS_SDK_TOOLCHAIN=gcc RTE_SDK=$SRCDIR/dpdk-stable-20.11.9/ XRAN_DIR=$SRCDIR/phy/fhi_lib make XRAN_LIB_SO=1
+if [ ! -f $SRCDIR/phy/fhi_lib/lib/build/libxran.so ]; then
+    cd $SRCDIR/phy/fhi_lib/lib
+    make clean
+    WIRELESS_SDK_TOOLCHAIN=gcc RTE_SDK=$SRCDIR/dpdk-stable-20.11.9/ XRAN_DIR=$SRCDIR/phy/fhi_lib make XRAN_LIB_SO=1
+else
+    echo "libxran.so already built, skipping."
+fi
 
 if [ ! -f $SRCDIR/phy/fhi_lib/lib/build/libxran.so ]; then
     echo "ERROR: The shared library object $SRCDIR/phy/fhi_lib/lib/build/libxran.so must be present before proceeding."
@@ -108,10 +132,14 @@ fi
 
 
 #Build OAI gNB
-cd $SRCDIR/openairinterface5g/cmake_targets
-export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib64/pkgconfig/
-./build_oai -I 
-./build_oai --gNB --ninja -t oran_fhlib_5g --cmake-opt -Dxran_LOCATION=$SRCDIR/phy/fhi_lib/lib
+if [ ! -f $SRCDIR/openairinterface5g/cmake_targets/ran_build/build/liboran_fhlib_5g.so ]; then
+    cd $SRCDIR/openairinterface5g/cmake_targets
+    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib64/pkgconfig/
+    ./build_oai -I 
+    ./build_oai --gNB --ninja -t oran_fhlib_5g --cmake-opt -Dxran_LOCATION=$SRCDIR/phy/fhi_lib/lib
+else
+    echo "OAI gNB already built, skipping."
+fi
 
 #Check to run if things are installed properly
 if ! ldd $SRCDIR/openairinterface5g/cmake_targets/ran_build/build/liboran_fhlib_5g.so; then

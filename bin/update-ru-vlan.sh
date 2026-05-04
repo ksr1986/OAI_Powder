@@ -14,9 +14,9 @@ RU_CFG=/local/repository/etc/ru/bru1/ru_config.cfg
 
 # Physical interface on cudu connected to the fronthaul (eth1 maps to this)
 FH_PARENT_IF=eno12409
-# These will be populated from the manifest; fallback values match profile.py defaults
-RU_MGMT_HOST_IP=10.10.2.1
-RU_IP=10.10.2.2
+# These will be populated from the manifest; fallback values match Benetel factory M-plane defaults
+RU_MGMT_HOST_IP=10.10.0.1
+RU_IP=10.10.0.100
 SCP_ARGS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
 VLAN_ID=""
