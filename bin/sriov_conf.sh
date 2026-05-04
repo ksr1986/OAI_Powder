@@ -14,6 +14,7 @@ IF_NAME=eno12408
 IF_VF0=eno12408v0
 IF_VF1=eno12408v1
 # PCI bus addresses of the two VFs (verify with: dpdk-devbind.py -s after creating VFs)
+# TODO: These must match dpdk_devices in gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf (currently 0000:17:0d.0/1 -- verify on hardware)
 U_PLANE_PCI_BUS_ADD=0000:43:00.1
 C_PLANE_PCI_BUS_ADD=0000:43:00.2
 

@@ -11,7 +11,7 @@ fi
 
 #Bring down the interfaces
 sudo ifconfig eno12408 down
-sudo ifconfig eno12419 down
+sudo ifconfig eno12409 down
 
  # Get the emulab repo -- what are these repos for? Do we need them for OAI?
 if ! grep -rq "repos.emulab.net/powder" /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
@@ -151,10 +151,8 @@ fi
 sudo $BINDIR/sriov_conf.sh
 echo "SR-IOV configured: VFs eno12408v0 (U-plane) and eno12408v1 (C-plane) bound to vfio-pci"
 
-# Copy OAI gNB conf file to runtime location
-sudo mkdir -p /var/tmp/etc/oai
-sudo cp $CFGDIR/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf /var/tmp/etc/oai/
-echo "OAI gNB conf file deployed to /var/tmp/etc/oai/"
+# OAI gNB conf file is already at $CFGDIR/oai/ (/local/repository/etc/oai/)
+echo "OAI gNB conf: $CFGDIR/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf"
 
 touch $SRCDIR/oai-setup-complete
 echo "OAI gNB setup complete: DPDK, libxran, OAI gNB, and SR-IOV fronthaul interfaces are ready"
