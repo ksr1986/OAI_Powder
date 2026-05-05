@@ -1,7 +1,13 @@
+#!/bin/bash
 #COMMIT_HASH=$1
-BINDIR=`dirname $0`
+BINDIR=/local/repository/bin
 ETCDIR=/local/repository/etc
-source $BINDIR/common.sh
+SRCDIR=/local/repository
+
+# Source common.sh if available for shared variables/functions; otherwise use defaults above
+if [ -f "$BINDIR/common.sh" ]; then
+    source "$BINDIR/common.sh"
+fi
 
 if [ -f $SRCDIR/oai-setup-complete ]; then
   echo "setup already ran; not running again"
@@ -10,8 +16,8 @@ if [ -f $SRCDIR/oai-setup-complete ]; then
 fi
 
 #Bring down the interfaces
-sudo ifconfig eno12408 down
-sudo ifconfig eno12409 down
+#sudo ifconfig eno12408 down
+#sudo ifconfig eno12409 down
 
  # Get the emulab repo -- what are these repos for? Do we need them for OAI?
 if ! grep -rq "repos.emulab.net/powder" /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
@@ -152,7 +158,7 @@ sudo $BINDIR/sriov_conf.sh
 echo "SR-IOV configured: VFs eno12408v0 (U-plane) and eno12408v1 (C-plane) bound to vfio-pci"
 
 # OAI gNB conf file is already at $CFGDIR/oai/ (/local/repository/etc/oai/)
-echo "OAI gNB conf: $CFGDIR/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf"
+echo "OAI gNB conf: $ETCDIR/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf"
 
-touch $SRCDIR/oai-setup-complete
+touch $ETCDIR/oai-setup-complete
 echo "OAI gNB setup complete: DPDK, libxran, OAI gNB, and SR-IOV fronthaul interfaces are ready"
