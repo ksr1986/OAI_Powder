@@ -4,8 +4,8 @@ source "$BINDIR/common.sh"
 
 RU=$1
 FH_PARENT_IF=eno12409
-HOST_IP=10.10.0.1
-RU_IP=10.10.0.100
+HOST_IP=10.10.2.1
+RU_IP=10.10.2.2
 
 if [ -z "$RU" ]; then
   echo "Usage: $0 <ru>"
