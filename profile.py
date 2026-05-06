@@ -21,7 +21,7 @@ CN + CUDU + RU topology (no UE).
 
 #### Start the OAI gNB on `cudu`:
 ```
-sudo /local/repository/openairinterface5g/cmake_targets/ran_build/build/nr-softmodem -O /local/repository/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf --sa
+sudo /local/openairinterface5g/cmake_targets/ran_build/build/nr-softmodem -O /local/repository/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf --sa
 ```
 
 Check `ptp4l` and `phc2sys` status on `cudu` before starting gNB, and verify O-RU status.

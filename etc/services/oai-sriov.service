@@ -1,0 +1,15 @@
+[Unit]
+Description=OAI SR-IOV VF and DPDK binding setup
+# Run after network interfaces are up, before OAI gNB
+After=network.target
+Before=oai-gnb.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/local/repository/bin/sriov_conf.sh
+StandardOutput=append:/var/log/oai-sriov.log
+StandardError=append:/var/log/oai-sriov.log
+
+[Install]
+WantedBy=multi-user.target

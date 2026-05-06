@@ -10,6 +10,8 @@
 BINDIR=/local/repository/bin
 ETCDIR=/local/repository/etc
 SRCDIR=/local/repository
+# Build artifacts go here (outside git repo; survives Emulab re-clone on reboot)
+BUILDDIR=/local
 
 OAI_PROJECT_REPO="https://gitlab.eurecom.fr/oai/openairinterface5g"
 
@@ -66,7 +68,7 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-if [ -f $SRCDIR/oai-setup-complete ]; then
+if [ -f /local/oai-setup-complete ]; then
     echo "setup already ran; not running again"
     exit 0
 fi
@@ -161,14 +163,14 @@ fi
 # ============================================================
 # 4. DPDK BUILD
 # ============================================================
-cd $SRCDIR
-if [ ! -d $SRCDIR/dpdk-stable-20.11.9 ]; then
-    [ ! -f $SRCDIR/dpdk-20.11.9.tar.xz ] && wget http://fast.dpdk.org/rel/dpdk-20.11.9.tar.xz
-    tar xvf dpdk-20.11.9.tar.xz
+cd $BUILDDIR
+if [ ! -d $BUILDDIR/dpdk-stable-20.11.9 ]; then
+    [ ! -f $BUILDDIR/dpdk-20.11.9.tar.xz ] && wget -P $BUILDDIR http://fast.dpdk.org/rel/dpdk-20.11.9.tar.xz
+    tar xvf $BUILDDIR/dpdk-20.11.9.tar.xz -C $BUILDDIR
 fi
 
 if ! pkg-config --exists libdpdk 2>/dev/null; then
-    cd $SRCDIR/dpdk-stable-20.11.9
+    cd $BUILDDIR/dpdk-stable-20.11.9
     meson build
     ninja -C build
     ninja -C build install
@@ -180,44 +182,44 @@ fi
 # ============================================================
 # 5. OAI AND PHY REPOS + BUILD
 # ============================================================
-if [ ! -d $SRCDIR/openairinterface5g ]; then
-    git clone $OAI_PROJECT_REPO $SRCDIR/openairinterface5g
+if [ ! -d $BUILDDIR/openairinterface5g ]; then
+    git clone $OAI_PROJECT_REPO $BUILDDIR/openairinterface5g
 fi
-cd $SRCDIR/openairinterface5g
+cd $BUILDDIR/openairinterface5g
 git checkout tags/v2.4.0
 
-if [ ! -d $SRCDIR/phy ]; then
-    git clone https://gerrit.o-ran-sc.org/r/o-du/phy.git $SRCDIR/phy
-    cd $SRCDIR/phy
+if [ ! -d $BUILDDIR/phy ]; then
+    git clone https://gerrit.o-ran-sc.org/r/o-du/phy.git $BUILDDIR/phy
+    cd $BUILDDIR/phy
     git checkout oran_f_release_v1.0
-    git apply $SRCDIR/openairinterface5g/cmake_targets/tools/oran_fhi_integration_patches/F/oaioran_F.patch
+    git apply $BUILDDIR/openairinterface5g/cmake_targets/tools/oran_fhi_integration_patches/F/oaioran_F.patch
 else
     echo "PHY repo already cloned, skipping."
 fi
 
-if [ ! -f $SRCDIR/phy/fhi_lib/lib/build/libxran.so ]; then
-    cd $SRCDIR/phy/fhi_lib/lib
+if [ ! -f $BUILDDIR/phy/fhi_lib/lib/build/libxran.so ]; then
+    cd $BUILDDIR/phy/fhi_lib/lib
     make clean
-    WIRELESS_SDK_TOOLCHAIN=gcc RTE_SDK=$SRCDIR/dpdk-stable-20.11.9/ XRAN_DIR=$SRCDIR/phy/fhi_lib make XRAN_LIB_SO=1
+    WIRELESS_SDK_TOOLCHAIN=gcc RTE_SDK=$BUILDDIR/dpdk-stable-20.11.9/ XRAN_DIR=$BUILDDIR/phy/fhi_lib make XRAN_LIB_SO=1
 else
     echo "libxran.so already built, skipping."
 fi
 
-if [ ! -f $SRCDIR/phy/fhi_lib/lib/build/libxran.so ]; then
-    echo "ERROR: $SRCDIR/phy/fhi_lib/lib/build/libxran.so not found. Build failed."
+if [ ! -f $BUILDDIR/phy/fhi_lib/lib/build/libxran.so ]; then
+    echo "ERROR: $BUILDDIR/phy/fhi_lib/lib/build/libxran.so not found. Build failed."
     exit 1
 fi
 
-if [ ! -f $SRCDIR/openairinterface5g/cmake_targets/ran_build/build/liboran_fhlib_5g.so ]; then
-    cd $SRCDIR/openairinterface5g/cmake_targets
+if [ ! -f $BUILDDIR/openairinterface5g/cmake_targets/ran_build/build/liboran_fhlib_5g.so ]; then
+    cd $BUILDDIR/openairinterface5g/cmake_targets
     export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib64/pkgconfig/
     ./build_oai -I
-    ./build_oai --gNB --ninja -t oran_fhlib_5g --cmake-opt -Dxran_LOCATION=$SRCDIR/phy/fhi_lib/lib
+    ./build_oai --gNB --ninja -t oran_fhlib_5g --cmake-opt -Dxran_LOCATION=$BUILDDIR/phy/fhi_lib/lib
 else
     echo "OAI gNB already built, skipping."
 fi
 
-if ! ldd $SRCDIR/openairinterface5g/cmake_targets/ran_build/build/liboran_fhlib_5g.so; then
+if ! ldd $BUILDDIR/openairinterface5g/cmake_targets/ran_build/build/liboran_fhlib_5g.so; then
     echo "ERROR: liboran_fhlib_5g.so failed ldd check; OAI build may be incomplete."
     exit 1
 fi
@@ -263,7 +265,14 @@ echo "SR-IOV configured: VFs $IF_VF0 (U-plane) and $IF_VF1 (C-plane) bound to vf
 # DONE
 # ============================================================
 echo "OAI gNB conf: $ETCDIR/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf"
-touch $SRCDIR/oai-setup-complete
+
+# Install SR-IOV as a boot-time service so VF bindings survive reboots
+cp $ETCDIR/services/oai-sriov.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable oai-sriov.service
+echo "oai-sriov.service installed and enabled (runs sriov_conf.sh on every boot)."
+
+touch /local/oai-setup-complete
 echo "Setup complete: DPDK, PTP, libxran, OAI gNB, and SR-IOV are ready."
 echo "NOTE: Reboot required for CPU isolation (isolcpus) to take effect."
 
