@@ -181,7 +181,7 @@ duru1ofh.component_id = "eth1"
 
 # Add OAI gNB deploy service here
 cudu.addService(pg.Execute(shell="bash", command=OAI_DEPLOY_SCRIPT))
-cudu.addService(pg.Execute(shell="bash", command="sudo /local/repository/bin/setup-ptp.sh"))
+# setup-ptp.sh is now merged into setup-oai.sh
 cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-attens bru1 0"))
 #cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-attens bru2 95"))
 cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-ru-vlan.sh"))
