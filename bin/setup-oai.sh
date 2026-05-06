@@ -31,9 +31,8 @@ IF_VF0=eno12409v0
 IF_VF1=eno12409v1
 
 # PCI bus addresses of the two VFs
-# TODO: Verify these match dpdk_devices in gnb conf (0000:17:0d.0/1 in conf vs 0000:43:00.1/2 here)
-U_PLANE_PCI_BUS_ADD=0000:43:00.1
-C_PLANE_PCI_BUS_ADD=0000:43:00.2
+U_PLANE_PCI_BUS_ADD=0000:43:09.0
+C_PLANE_PCI_BUS_ADD=0000:43:09.1
 
 MTU=8192
 DRIVER=vfio_pci

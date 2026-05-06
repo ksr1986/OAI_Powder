@@ -9,19 +9,18 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Physical function (PF) interface name for SR-IOV (U-plane port)
-IF_NAME=eno12408
+IF_NAME=eno12409
 # VF interface names created by the kernel from the PF
-IF_VF0=eno12408v0
-IF_VF1=eno12408v1
+IF_VF0=eno12409v0
+IF_VF1=eno12409v1
 # PCI bus addresses of the two VFs (verify with: dpdk-devbind.py -s after creating VFs)
-# TODO: These must match dpdk_devices in gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf (currently 0000:17:0d.0/1 -- verify on hardware)
-U_PLANE_PCI_BUS_ADD=0000:43:00.1
-C_PLANE_PCI_BUS_ADD=0000:43:00.2
+U_PLANE_PCI_BUS_ADD=0000:43:09.0
+C_PLANE_PCI_BUS_ADD=0000:43:09.1
 
 MAX_RING_BUFFER_SIZE=$(ethtool -g $IF_NAME|grep "maxi" -A1|awk '/RX/{print $2}')
 MTU=8192
-DU_U_PLANE_MAC_ADD=00:11:22:33:44:68
-DU_C_PLANE_MAC_ADD=00:11:22:33:44:69
+DU_U_PLANE_MAC_ADD=30:3e:a7:1a:9f:49
+DU_C_PLANE_MAC_ADD=30:3e:a7:1a:9f:49
 DRIVER=vfio_pci
 
 # Read fronthaul VLAN from manifest; fall back to DEFAULT_FH_VLAN from common.sh

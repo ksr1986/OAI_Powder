@@ -21,7 +21,7 @@ CN + CUDU + RU topology (no UE).
 
 #### Start the OAI gNB on `cudu`:
 ```
-sudo /local/openairinterface5g/cmake_targets/ran_build/build/nr-softmodem -O /local/repository/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf --sa
+sudo /local/openairinterface5g/cmake_targets/ran_build/build/nr-softmodem -O /local/repository/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf
 ```
 
 Check `ptp4l` and `phc2sys` status on `cudu` before starting gNB, and verify O-RU status.
@@ -158,13 +158,13 @@ cudu.hardware_type = "d760p"  # auto-select any available d760p
 
 cudu.disk_image = UBUNTU_IMG  #TODO: update image for OAI deployment if needed
 cudu_cn_if = cudu.addInterface("{}-cn-if".format(node_name))
-cudu_cn_if.PTP()
 cudu_cn_if.component_id = "eth0"
 cudu_cn_if.addAddress(pg.IPv4Address("192.168.1.2", "255.255.255.0"))
 cn_link.addInterface(cudu_cn_if)
 
 duru1ofh = cudu.addInterface("{}ru1ofh".format(node_name))
 duru1ofh.component_id = "eth1"
+duru1ofh.PTP()
 #duru2ofh = cudu.addInterface("{}ru2ofh".format(node_name))
 #duru2ofh.component_id = "eth2"
 
