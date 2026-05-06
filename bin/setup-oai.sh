@@ -1,45 +1,91 @@
 #!/bin/bash
 # Combined setup script: installs/builds OAI gNB, configures PTP, and sets up SR-IOV.
 # Run order: packages → GRUB → PTP → DPDK → OAI build → libxran → SR-IOV
+# Standalone: does not rely on common.sh
 # Must be run as root (sudo).
 
+# ============================================================
+# CONFIGURATION — edit these if hardware changes
+# ============================================================
 BINDIR=/local/repository/bin
 ETCDIR=/local/repository/etc
 SRCDIR=/local/repository
 
-# Source common.sh if available for shared variables/functions; otherwise use defaults above
-if [ -f "$BINDIR/common.sh" ]; then
-    source "$BINDIR/common.sh"
-fi
+OAI_PROJECT_REPO="https://gitlab.eurecom.fr/oai/openairinterface5g"
 
+# Fronthaul VLAN (assigned by Emulab; 168 is the known value for this experiment)
+DEFAULT_FH_VLAN=168
+
+# DU MAC address (cudu eth1 / cuduru1ofh interface MAC)
+DU_U_PLANE_MAC_ADD=30:3e:a7:1a:9f:49
+DU_C_PLANE_MAC_ADD=30:3e:a7:1a:9f:49
+
+# RU MAC address (used in OAI gNB conf ru_addr)
+RU_MAC=8c:1f:64:d1:15:0e
+
+# SR-IOV physical function interface (eCPRI DPDK port)
+IF_NAME=eno12409
+IF_VF0=eno12409v0
+IF_VF1=eno12409v1
+
+# PCI bus addresses of the two VFs
+# TODO: Verify these match dpdk_devices in gnb conf (0000:17:0d.0/1 in conf vs 0000:43:00.1/2 here)
+U_PLANE_PCI_BUS_ADD=0000:43:00.1
+C_PLANE_PCI_BUS_ADD=0000:43:00.2
+
+MTU=8192
+DRIVER=vfio_pci
+
+# ============================================================
+# Helper: read fronthaul VLAN ID from experiment manifest
+# ============================================================
+get_fh_vlan_from_manifest() {
+    command -v geni-get &>/dev/null || return
+    geni-get manifest 2>/dev/null | python3 - <<'PYEOF'
+import sys, xml.etree.ElementTree as ET
+try:
+    root = ET.parse(sys.stdin).getroot()
+    ns = root.tag.split('}')[0].lstrip('{') if '}' in root.tag else ''
+    pfx = ('{%s}' % ns) if ns else ''
+    for link in root.iter('%slink' % pfx):
+        if link.get('client_id') == 'duru1t':
+            vlan = link.get('vlantag', '').strip()
+            if vlan:
+                print(vlan)
+            break
+except Exception as e:
+    sys.stderr.write("manifest parse error: %s\n" % e)
+PYEOF
+}
+
+# ============================================================
+# SANITY CHECKS
+# ============================================================
 if [ "$EUID" -ne 0 ]; then
     echo "Please run as root (use sudo)"
     exit 1
 fi
 
 if [ -f $SRCDIR/oai-setup-complete ]; then
-  echo "setup already ran; not running again"
-  exit 0
+    echo "setup already ran; not running again"
+    exit 0
 fi
 
 # ============================================================
 # 1. APT REPOSITORIES AND PACKAGES
 # ============================================================
 if ! grep -rq "repos.emulab.net/powder" /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
-  while ! wget -qO - http://repos.emulab.net/emulab.key | apt-key add -
-  do
-      echo "Failed to get emulab key, retrying"
-  done
-  while ! add-apt-repository -y http://repos.emulab.net/powder/ubuntu/
-  do
-      echo "Failed to add emulab repo, retrying"
-  done
-  while ! apt-get update
-  do
-      echo "Failed to update, retrying"
-  done
+    while ! wget -qO - http://repos.emulab.net/emulab.key | apt-key add -; do
+        echo "Failed to get emulab key, retrying"
+    done
+    while ! add-apt-repository -y http://repos.emulab.net/powder/ubuntu/; do
+        echo "Failed to add emulab repo, retrying"
+    done
+    while ! apt-get update; do
+        echo "Failed to update, retrying"
+    done
 else
-  echo "Emulab repo already configured, skipping."
+    echo "Emulab repo already configured, skipping."
 fi
 
 REQUIRED_PKGS="cmake ninja-build meson make gcc g++ iperf3 pkg-config libfftw3-dev libmbedtls-dev libsctp-dev libyaml-cpp-dev libgtest-dev linuxptp ppp libxml-simple-perl wget xz-utils libnuma-dev"
@@ -57,21 +103,21 @@ fi
 # 2. GRUB CPU ISOLATION (takes effect after reboot)
 # ============================================================
 # CPU allocation:
-#   0,2,4       -> XRAN DPDK usage
-#   6           -> OAI ru_thread
-#   8           -> OAI L1_rx_thread
-#   10          -> OAI L1_tx_thread
-#   1,3,5,7,9,11,13 -> OAI nr-softmodem
-#   12          -> ptp4l
-#   14-15       -> kernel / kthreads
+#   0,2,4            -> XRAN DPDK usage
+#   6                -> OAI ru_thread
+#   8                -> OAI L1_rx_thread
+#   10               -> OAI L1_tx_thread
+#   1,3,5,7,9,11,13  -> OAI nr-softmodem
+#   12               -> ptp4l
+#   14-15            -> kernel / kthreads
 GRUB_PARAMS="systemd.unified_cgroup_hierarchy=false quiet splash intel_idle.max_cstate=0 mitigations=off usbcore.autosuspend=-1 intel_iommu=on iommu=pt selinux=0 enforcing=0 nmi_watchdog=0 softlockup_panic=0 audit=0 skew_tick=1 isolcpus=managed_irq,domain,0-13 nohz_full=0-13 rcu_nocbs=0-13 kthread_cpus=14-15 rcu_nocb_poll nosoftlockup default_hugepagesz=1GB hugepagesz=1G hugepages=20"
 GRUB_FILE=/etc/default/grub
 if grep -q "isolcpus" "$GRUB_FILE"; then
-  echo "CPU isolation already set in GRUB, skipping."
+    echo "CPU isolation already set in GRUB, skipping."
 else
-  sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"${GRUB_PARAMS}\"|" "$GRUB_FILE"
-  update-grub
-  echo "GRUB updated for CPU isolation. A reboot is required for isolcpus to take effect."
+    sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"${GRUB_PARAMS}\"|" "$GRUB_FILE"
+    update-grub
+    echo "GRUB updated for CPU isolation. A reboot is required for isolcpus to take effect."
 fi
 
 # ============================================================
@@ -80,7 +126,6 @@ fi
 PROFILE="G8275-1"
 PTPCONF=/etc/linuxptp/ptp4l.conf
 
-# Determine PTP interface from manifest
 IFACE=$($BINDIR/getptpiface)
 if [ $? -ne 0 ] || [ -z "$IFACE" ]; then
     echo "WARNING: Cannot determine PTP interface. Skipping PTP setup."
@@ -180,19 +225,6 @@ fi
 # ============================================================
 # 6. SR-IOV SETUP
 # ============================================================
-# Physical function (PF) for SR-IOV eCPRI U/C-plane traffic
-# NOTE: IF_NAME should be eno12408 (DPDK port), NOT eno12409 (management port)
-IF_NAME=eno12408
-IF_VF0=eno12408v0
-IF_VF1=eno12408v1
-# TODO: Verify PCI addresses match dpdk_devices in gnb conf (currently 0000:17:0d.0/1 in conf vs 0000:43:00.1/2 here)
-U_PLANE_PCI_BUS_ADD=0000:43:00.1
-C_PLANE_PCI_BUS_ADD=0000:43:00.2
-MTU=8192
-DU_U_PLANE_MAC_ADD=30:3e:a7:1a:9f:49
-DU_C_PLANE_MAC_ADD=30:3e:a7:1a:9f:49
-DRIVER=vfio_pci
-
 echo "Reading fronthaul VLAN ID from manifest..."
 VLAN=$(get_fh_vlan_from_manifest)
 if [[ "$VLAN" =~ ^[0-9]+$ ]]; then
@@ -234,3 +266,4 @@ echo "OAI gNB conf: $ETCDIR/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf
 touch $SRCDIR/oai-setup-complete
 echo "Setup complete: DPDK, PTP, libxran, OAI gNB, and SR-IOV are ready."
 echo "NOTE: Reboot required for CPU isolation (isolcpus) to take effect."
+
