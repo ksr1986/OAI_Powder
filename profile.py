@@ -196,8 +196,7 @@ ru1duofh.component_id = "eth0"
 ru1duofh.PTP()
 ru1duofh.SyncE()
 duru1t = request.Link("duru1t", members=[duru1ofh, ru1duofh])
-# Let testbed auto-assign VLAN tag
-# duru1t.vlan_tagging = True
+duru1t.vlan_tagging = True
 # duru1t.setVlanTag(params.vlan_id_ru1)
 ru1.Desire("rf-controlled", 1)
 
