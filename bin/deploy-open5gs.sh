@@ -60,4 +60,7 @@ chmod +x open5gs-dbctl
 ./open5gs-dbctl add_ue_with_slice 999990000000105 00112233445566778899aabbccddeeff 0ed47545168eafe2c39c075829a7b61f internet 1 000001 # IMSI,K,OPC
 ./open5gs-dbctl type 999990000000105 1  # APN type IPV4
 ./open5gs-dbctl static_ip 999990000000105 10.45.0.105
+./open5gs-dbctl add_ue_with_slice 999990000000128 00112233445566778899aabbccddeeff 0ed47545168eafe2c39c075829a7b61f internet 1 000001 # IMSI,K,OPC
+./open5gs-dbctl type 999990000000128 1  # APN type IPV4
+./open5gs-dbctl static_ip 999990000000128 10.45.0.128
 touch $SRCDIR/open5gs-setup-complete
