@@ -19,19 +19,16 @@ install_ue_deps () {
 
 add_ue_app () {
     sudo cp $BINDIR/ue_app.py $SRCDIR
+    sudo chmod +x $SRCDIR/ue_app.py
 }
 
-maybe_add_ue_metrics () {
-    if ! test -f /etc/systemd/system/ue-metrics.service; then
-        sudo cp $SERVICESDIR/ue-metrics.service /etc/systemd/system/ue-metrics.service
-        sudo cp $BINDIR/ue_metrics.py $SRCDIR
-    fi
-}
+maybe_add_ue_metrics () {\n    if ! test -f /etc/systemd/system/ue-metrics.service; then\n        sudo cp $SERVICESDIR/ue-metrics.service /etc/systemd/system/ue-metrics.service\n        sudo cp $BINDIR/ue_metrics.py $SRCDIR\n        sudo chmod +x $SRCDIR/ue_metrics.py\n    fi\n}
 
 maybe_add_quectel_control () {
     if ! test -f /etc/systemd/system/quectel-control.service; then
         sudo cp $SERVICESDIR/quectel-control.service /etc/systemd/system/quectel-control.service
         sudo cp $BINDIR/quectel_control.py $SRCDIR
+        sudo chmod +x $SRCDIR/quectel_control.py
         sudo systemctl daemon-reload
         sudo systemctl enable quectel-control
         sudo systemctl restart quectel-control

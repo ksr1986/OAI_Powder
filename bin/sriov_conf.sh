@@ -20,7 +20,7 @@ C_PLANE_PCI_BUS_ADD=0000:43:09.1
 MAX_RING_BUFFER_SIZE=$(ethtool -g $IF_NAME|grep "maxi" -A1|awk '/RX/{print $2}')
 MTU=8192
 DU_U_PLANE_MAC_ADD=30:3e:a7:1a:9f:49
-DU_C_PLANE_MAC_ADD=30:3e:a7:1a:9f:49
+DU_C_PLANE_MAC_ADD=30:3e:a7:1a:9f:4a
 DRIVER=vfio_pci
 
 # Read fronthaul VLAN from manifest; fall back to DEFAULT_FH_VLAN from common.sh

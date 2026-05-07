@@ -10,7 +10,7 @@ Environment=PYTHONUNBUFFERED=1
 Type=simple
 Restart=always
 RestartSec=1
-ExecStart=/var/tmp/ue_metrics.py
+ExecStart=/local/repository/ue_metrics.py
 StandardOutput=truncate:/var/log/ue-metrics.log
 StandardError=truncate:/var/log/ue-metrics.log
 

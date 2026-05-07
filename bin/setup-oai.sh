@@ -20,7 +20,7 @@ DEFAULT_FH_VLAN=168
 
 # DU MAC address (cudu eth1 / cuduru1ofh interface MAC)
 DU_U_PLANE_MAC_ADD=30:3e:a7:1a:9f:49
-DU_C_PLANE_MAC_ADD=30:3e:a7:1a:9f:49
+DU_C_PLANE_MAC_ADD=30:3e:a7:1a:9f:4a
 
 # RU MAC address (used in OAI gNB conf ru_addr)
 RU_MAC=8c:1f:64:d1:15:0e
