@@ -1,7 +1,7 @@
 
-SRCDIR=/local/repository
-CFGDIR=/local/repository/etc
-SERVICESDIR=/local/repository/etc/services
+SRCDIR=~/Desktop/Test_OAI/
+CFGDIR=~/Desktop/Test_OAI//etc
+SERVICESDIR=~/Desktop/Test_OAI//etc/services
 #SRS_PROJECT_REPO="https://github.com/srsRAN/srsRAN_Project"
 OAI_PROJECT_REPO="https://gitlab.eurecom.fr/oai/openairinterface5g"
 

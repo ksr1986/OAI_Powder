@@ -1,5 +1,5 @@
 #!/bin/bash
-UPDATE_ATTENS_SCRIPT=/local/repository/bin/update-attens
+UPDATE_ATTENS_SCRIPT=~/Desktop/Test_OAI//bin/update-attens
 DST_RU=$1
 ATTEN_STEP=5
 START_ATTEN_SRC=15

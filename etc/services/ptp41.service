@@ -1,0 +1,11 @@
+[Unit]
+Description=Precision Time Protocol (PTP) service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/taskset -c 12 /usr/sbin/ptp4l -f /etc/ptp.conf
+
+[Install]
+WantedBy=multi-user.target

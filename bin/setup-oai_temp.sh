@@ -1,24 +1,32 @@
 #!/bin/bash
-# Combined setup script: installs/builds OAI gNB, configures PTP, and sets up SR-IOV.
-# Run order: packages → GRUB → PTP → DPDK → OAI build → libxran → SR-IOV
-# Standalone: does not rely on common.sh
-# Must be run as root (sudo).
+# One-shot setup script: installs/builds OAI gNB, configures PTP, SR-IOV,
+# pushes RU config over SSH, and prepares boot-time services.
+# Run order: packages → GRUB → PTP → DPDK → OAI build → libxran → SR-IOV → RU push
+# Must be run as root (sudo) from the gNB machine.
+# Copy the local_install directory to /home/ubuntu/Desktop/Test_OAI/ before running.
 
 # ============================================================
 # CONFIGURATION — edit these if hardware changes
 # ============================================================
-BINDIR=/local/repository/bin
-ETCDIR=/local/repository/etc
-SRCDIR=/local/repository
-# Build artifacts go here (outside git repo; survives Emulab re-clone on reboot)
-BUILDDIR=/local
+BINDIR=/home/ubuntu/Desktop/Test_OAI/local_install/bin
+ETCDIR=/home/ubuntu/Desktop/Test_OAI/local_install/etc
+SRCDIR=/home/ubuntu/Desktop/Test_OAI/local_install
+# Build artifacts go here (OAI and DPDK are built into this directory)
+BUILDDIR=/home/ubuntu/Desktop/Test_OAI/local_install/build
 
 OAI_PROJECT_REPO="https://gitlab.eurecom.fr/oai/openairinterface5g"
 
 # Fronthaul VLAN (assigned by Emulab; 168 is the known value for this experiment)
 DEFAULT_FH_VLAN=168
 
-# DU MAC address (cudu eth1 / cuduru1ofh interface MAC)
+# OAI gNB and RU management IPs
+OAI_GNB_IP=100.71.86.222
+RU_IP=100.71.86.231
+
+# FH/PTP interface
+FH_PTP_IFACE=eno12409
+
+# DU FH MAC address assignments for VF 0/1
 DU_U_PLANE_MAC_ADD=30:3e:a7:1a:9f:49
 DU_C_PLANE_MAC_ADD=30:3e:a7:1a:9f:4a
 
@@ -26,9 +34,9 @@ DU_C_PLANE_MAC_ADD=30:3e:a7:1a:9f:4a
 RU_MAC=8c:1f:64:d1:15:0e
 
 # SR-IOV physical function interface (eCPRI DPDK port)
-IF_NAME=eno12409
-IF_VF0=eno12409v0
-IF_VF1=eno12409v1
+IF_NAME=$FH_PTP_IFACE
+IF_VF0=${FH_PTP_IFACE}v0
+IF_VF1=${FH_PTP_IFACE}v1
 
 # PCI bus addresses of the two VFs
 U_PLANE_PCI_BUS_ADD=0000:43:09.0
@@ -38,7 +46,7 @@ MTU=8192
 DRIVER=vfio_pci
 OAI_GNB_CONF=$ETCDIR/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf
 
-## ============================================================
+# ============================================================
 # Helper: read fronthaul VLAN ID from experiment manifest
 # ============================================================
 # get_fh_vlan_from_manifest() {
@@ -275,7 +283,11 @@ systemctl daemon-reload
 systemctl enable oai-sriov.service
 echo "oai-sriov.service installed and enabled (runs sriov_conf.sh on every boot)."
 echo "oai-gnb.service installed (start manually: systemctl start oai-gnb)."
+echo "Configured OAI gNB IP: $OAI_GNB_IP"
+echo "Configured RU IP: $RU_IP"
 
 touch /home/ubuntu/Desktop/Test_OAI/.oai-setup-complete
 echo "Setup complete: DPDK, PTP, libxran, OAI gNB, and SR-IOV are ready."
 echo "NOTE: Reboot required for CPU isolation (isolcpus) to take effect."
+
+

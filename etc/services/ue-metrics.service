@@ -10,7 +10,7 @@ Environment=PYTHONUNBUFFERED=1
 Type=simple
 Restart=always
 RestartSec=1
-ExecStart=/local/repository/ue_metrics.py
+ExecStart=~/Desktop/Test_OAI//ue_metrics.py
 StandardOutput=truncate:/var/log/ue-metrics.log
 StandardError=truncate:/var/log/ue-metrics.log
 

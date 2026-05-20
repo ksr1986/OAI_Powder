@@ -9,7 +9,7 @@
 BINDIR=$(dirname "$0")
 source "$BINDIR/common.sh"
 
-RU_CFG=/local/repository/etc/ru/bru1/ru_config.cfg
+RU_CFG=~/Desktop/Test_OAI//etc/ru/bru1/ru_config.cfg
 
 # Physical interface on cudu connected to the fronthaul (eth1 maps to this)
 FH_PARENT_IF=eno12409
@@ -18,89 +18,91 @@ RU_MGMT_HOST_IP=10.10.2.1
 RU_IP=10.10.2.2
 SCP_ARGS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
-VLAN_ID=""
+# Hardcoded VLAN ID (was previously read from manifest or detected via interface)
+VLAN_ID=168
+echo "Using hardcoded VLAN ID $VLAN_ID."
 
-# --- Method 1: read VLAN ID, RU IP, and cudu fronthaul IP from manifest via geni-get ---
-echo "Attempting to read values from experiment manifest (geni-get)..."
-if command -v geni-get &>/dev/null; then
-    MANIFEST_VALS=$(geni-get manifest 2>/dev/null | python3 - <<'PYEOF'
-import sys, xml.etree.ElementTree as ET
-try:
-    root = ET.parse(sys.stdin).getroot()
-    ns = root.tag.split('}')[0].lstrip('{') if '}' in root.tag else ''
-    pfx = ('{%s}' % ns) if ns else ''
+# --- Method 1 (disabled): read VLAN ID, RU IP, and cudu fronthaul IP from manifest via geni-get ---
+# echo "Attempting to read values from experiment manifest (geni-get)..."
+# if command -v geni-get &>/dev/null; then
+#     MANIFEST_VALS=$(geni-get manifest 2>/dev/null | python3 - <<'PYEOF'
+# import sys, xml.etree.ElementTree as ET
+# try:
+#     root = ET.parse(sys.stdin).getroot()
+#     ns = root.tag.split('}')[0].lstrip('{') if '}' in root.tag else ''
+#     pfx = ('{%s}' % ns) if ns else ''
+#
+#     vlan_id = ''
+#     ru_ip = ''
+#     cudu_fh_ip = ''
+#
+#     for link in root.iter('%slink' % pfx):
+#         if link.get('client_id') == 'duru1t':
+#             vlan_id = link.get('vlantag', '').strip()
+#
+#     for iface in root.iter('%sinterface' % pfx):
+#         cid = iface.get('client_id', '')
+#         for ip in iface.iter('%sip' % pfx):
+#             addr = ip.get('address', '').strip()
+#             if cid == 'ru1:ru1duofh':
+#                 ru_ip = addr
+#             elif cid == 'cudu:cuduru1ofh':
+#                 cudu_fh_ip = addr
+#
+#     print('%s %s %s' % (vlan_id, ru_ip, cudu_fh_ip))
+# except Exception as e:
+#     sys.stderr.write("manifest parse error: %s\n" % e)
+#     print('  ')
+# PYEOF
+# )
+#     read -r M_VLAN M_RU_IP M_CUDU_FH_IP <<< "$MANIFEST_VALS"
+#
+#     if [[ "$M_VLAN" =~ ^[0-9]+$ ]]; then
+#         VLAN_ID="$M_VLAN"
+#         echo "Got VLAN ID $VLAN_ID from manifest."
+#     else
+#         echo "Could not extract VLAN ID from manifest. Falling back to interface detection."
+#     fi
+#
+#     if [[ "$M_RU_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+#         RU_IP="$M_RU_IP"
+#         echo "Got RU IP $RU_IP from manifest."
+#     else
+#         echo "Could not extract RU IP from manifest. Using default: $RU_IP"
+#     fi
+#
+#     if [[ "$M_CUDU_FH_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+#         RU_MGMT_HOST_IP="$M_CUDU_FH_IP"
+#         echo "Got cudu fronthaul IP $RU_MGMT_HOST_IP from manifest."
+#     else
+#         echo "Could not extract cudu fronthaul IP from manifest. Using default: $RU_MGMT_HOST_IP"
+#     fi
+# else
+#     echo "geni-get not available. Falling back to interface detection with default IPs."
+# fi
 
-    vlan_id = ''
-    ru_ip = ''
-    cudu_fh_ip = ''
-
-    for link in root.iter('%slink' % pfx):
-        if link.get('client_id') == 'duru1t':
-            vlan_id = link.get('vlantag', '').strip()
-
-    for iface in root.iter('%sinterface' % pfx):
-        cid = iface.get('client_id', '')
-        for ip in iface.iter('%sip' % pfx):
-            addr = ip.get('address', '').strip()
-            if cid == 'ru1:ru1duofh':
-                ru_ip = addr
-            elif cid == 'cudu:cuduru1ofh':
-                cudu_fh_ip = addr
-
-    print('%s %s %s' % (vlan_id, ru_ip, cudu_fh_ip))
-except Exception as e:
-    sys.stderr.write("manifest parse error: %s\n" % e)
-    print('  ')
-PYEOF
-)
-    read -r M_VLAN M_RU_IP M_CUDU_FH_IP <<< "$MANIFEST_VALS"
-
-    if [[ "$M_VLAN" =~ ^[0-9]+$ ]]; then
-        VLAN_ID="$M_VLAN"
-        echo "Got VLAN ID $VLAN_ID from manifest."
-    else
-        echo "Could not extract VLAN ID from manifest. Falling back to interface detection."
-    fi
-
-    if [[ "$M_RU_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        RU_IP="$M_RU_IP"
-        echo "Got RU IP $RU_IP from manifest."
-    else
-        echo "Could not extract RU IP from manifest. Using default: $RU_IP"
-    fi
-
-    if [[ "$M_CUDU_FH_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        RU_MGMT_HOST_IP="$M_CUDU_FH_IP"
-        echo "Got cudu fronthaul IP $RU_MGMT_HOST_IP from manifest."
-    else
-        echo "Could not extract cudu fronthaul IP from manifest. Using default: $RU_MGMT_HOST_IP"
-    fi
-else
-    echo "geni-get not available. Falling back to interface detection with default IPs."
-fi
-
-# --- Method 2 (fallback): detect VLAN sub-interface on parent port ---
-if [ -z "$VLAN_ID" ]; then
-    echo "Waiting up to 90s for VLAN sub-interface on $FH_PARENT_IF..."
-    FH_VLAN_IF=""
-    for i in $(seq 1 90); do
-        FH_VLAN_IF=$(ip link show 2>/dev/null | grep -oP "${FH_PARENT_IF}\.\d+" | head -1)
-        [ -n "$FH_VLAN_IF" ] && break
-        sleep 1
-    done
-
-    if [ -z "$FH_VLAN_IF" ]; then
-        echo "ERROR: No VLAN sub-interface found on $FH_PARENT_IF after 90s. Cannot update RU VLAN config."
-        exit 1
-    fi
-
-    VLAN_ID=$(echo "$FH_VLAN_IF" | awk -F. '{print $NF}')
-    if ! [[ "$VLAN_ID" =~ ^[0-9]+$ ]]; then
-        echo "ERROR: Could not extract a valid VLAN ID from interface $FH_VLAN_IF"
-        exit 1
-    fi
-    echo "Detected VLAN ID $VLAN_ID from interface $FH_VLAN_IF."
-fi
+# --- Method 2 (disabled): detect VLAN sub-interface on parent port ---
+# if [ -z "$VLAN_ID" ]; then
+#     echo "Waiting up to 90s for VLAN sub-interface on $FH_PARENT_IF..."
+#     FH_VLAN_IF=""
+#     for i in $(seq 1 90); do
+#         FH_VLAN_IF=$(ip link show 2>/dev/null | grep -oP "${FH_PARENT_IF}\.\d+" | head -1)
+#         [ -n "$FH_VLAN_IF" ] && break
+#         sleep 1
+#     done
+#
+#     if [ -z "$FH_VLAN_IF" ]; then
+#         echo "ERROR: No VLAN sub-interface found on $FH_PARENT_IF after 90s. Cannot update RU VLAN config."
+#         exit 1
+#     fi
+#
+#     VLAN_ID=$(echo "$FH_VLAN_IF" | awk -F. '{print $NF}')
+#     if ! [[ "$VLAN_ID" =~ ^[0-9]+$ ]]; then
+#         echo "ERROR: Could not extract a valid VLAN ID from interface $FH_VLAN_IF"
+#         exit 1
+#     fi
+#     echo "Detected VLAN ID $VLAN_ID from interface $FH_VLAN_IF."
+# fi
 
 VLAN_HEX=$(printf '%x' "$VLAN_ID")
 echo "Using fronthaul VLAN ID: $VLAN_ID (hex: ${VLAN_HEX})"

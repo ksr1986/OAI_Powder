@@ -33,7 +33,7 @@ sudo apt install -y \
 sudo systemctl start mongod
 sudo systemctl enable mongod
 sudo apt install -y open5gs
-sudo cp /local/repository/etc/open5gs/* /etc/open5gs/
+sudo cp ~/Desktop/Test_OAI//etc/open5gs/* /etc/open5gs/
 
 sudo systemctl restart open5gs-mmed
 sudo systemctl restart open5gs-sgwcd

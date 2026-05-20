@@ -7,7 +7,7 @@ Before=oai-gnb.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/local/repository/bin/sriov_conf.sh
+ExecStart=/home/ubuntu/Desktop/Test_OAI/bin/sriov_conf.sh
 StandardOutput=append:/var/log/oai-sriov.log
 StandardError=append:/var/log/oai-sriov.log
 

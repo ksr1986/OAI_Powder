@@ -1,13 +1,10 @@
 [Unit]
 Description=Synchronize system clock or PTP hardware clock (PHC)
-Documentation=man:phc2sys
-Requires=ptp4l@.service
-After=ptp4l@.service
-Before=time-sync.target
+After=ntpdate.service ptp4l.service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/taskset -c 12 /usr/sbin/phc2sys -w -s %I -f /etc/linuxptp/ptp4l.conf
+ExecStart=taskset -c 12 /usr/sbin/phc2sys -a -r -r -n 24 -R 256 -u 256
 
 [Install]
 WantedBy=multi-user.target

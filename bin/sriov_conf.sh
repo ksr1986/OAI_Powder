@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # SR-IOV setup for OAI gNB fronthaul (eCPRI over DPDK).
 # Standalone: does not rely on common.sh.
 # Must be run as root (sudo). Safe to re-run.
@@ -6,7 +7,7 @@
 # ============================================================
 # CONFIGURATION — edit these if hardware changes
 # ============================================================
-# Fronthaul VLAN (assigned by Emulab; 168 is the known value for this experiment)
+# Fronthaul VLAN (decimal; must match RU config which stores it as hex)
 DEFAULT_FH_VLAN=168
 
 # SR-IOV physical function interface (eCPRI DPDK port)
@@ -15,35 +16,37 @@ IF_NAME=eno12409
 IF_VF0=eno12409v0
 IF_VF1=eno12409v1
 
-# PCI bus addresses of the two VFs (verify with: dpdk-devbind.py -s after creating VFs)
-U_PLANE_PCI_BUS_ADD=0000:43:09.0
-C_PLANE_PCI_BUS_ADD=0000:43:09.1
+# PCI bus addresses — discovered dynamically from sysfs after VF creation (do not hardcode)
+U_PLANE_PCI_BUS_ADD=""
+C_PLANE_PCI_BUS_ADD=""
 
 MTU=8192
-DU_MAC_ADD=30:3e:a7:1a:9f:49
+# U-plane MAC assigned to VF0, C-plane MAC assigned to VF1
+DU_U_PLANE_MAC_ADD=30:3e:a7:1a:9f:49
+DU_C_PLANE_MAC_ADD=30:3e:a7:1a:9f:4a
 DRIVER=vfio_pci
 
 # ============================================================
 # Helper: read fronthaul VLAN ID from experiment manifest
 # ============================================================
-get_fh_vlan_from_manifest() {
-    command -v geni-get &>/dev/null || return
-    geni-get manifest 2>/dev/null | python3 - <<'PYEOF'
-import sys, xml.etree.ElementTree as ET
-try:
-    root = ET.parse(sys.stdin).getroot()
-    ns = root.tag.split('}')[0].lstrip('{') if '}' in root.tag else ''
-    pfx = ('{%s}' % ns) if ns else ''
-    for link in root.iter('%slink' % pfx):
-        if link.get('client_id') == 'duru1t':
-            vlan = link.get('vlantag', '').strip()
-            if vlan:
-                print(vlan)
-            break
-except Exception as e:
-    sys.stderr.write("manifest parse error: %s\n" % e)
-PYEOF
-}
+# get_fh_vlan_from_manifest() {
+#     command -v geni-get &>/dev/null || return
+#     geni-get manifest 2>/dev/null | python3 - <<'PYEOF'
+# import sys, xml.etree.ElementTree as ET
+# try:
+#     root = ET.parse(sys.stdin).getroot()
+#     ns = root.tag.split('}')[0].lstrip('{') if '}' in root.tag else ''
+#     pfx = ('{%s}' % ns) if ns else ''
+#     for link in root.iter('%slink' % pfx):
+#         if link.get('client_id') == 'duru1t':
+#             vlan = link.get('vlantag', '').strip()
+#             if vlan:
+#                 print(vlan)
+#             break
+# except Exception as e:
+#     sys.stderr.write("manifest parse error: %s\n" % e)
+# PYEOF
+# }
 
 # ============================================================
 # SANITY CHECK
@@ -56,13 +59,38 @@ fi
 # ============================================================
 # SR-IOV SETUP
 # ============================================================
-echo "Reading fronthaul VLAN ID from manifest..."
-VLAN=$(get_fh_vlan_from_manifest)
-if [[ "$VLAN" =~ ^[0-9]+$ ]]; then
-    echo "Using VLAN $VLAN from manifest."
+# echo "Reading fronthaul VLAN ID from manifest..."
+# VLAN=$(get_fh_vlan_from_manifest)
+# if [[ "$VLAN" =~ ^[0-9]+$ ]]; then
+#     echo "Using VLAN $VLAN from manifest."
+# else
+#     VLAN=$DEFAULT_FH_VLAN
+#     echo "Could not read VLAN from manifest. Using default: $VLAN"
+# fi
+VLAN=168
+echo "Using hardcoded VLAN $VLAN."
+
+# ============================================================
+# HUGEPAGES — allocate at runtime so DPDK can initialise
+# without requiring a reboot after GRUB update.
+# ============================================================
+HUGEPAGE_1G=/sys/kernel/mm/hugepages/hugepages-1048576kB/nr_hugepages
+if [ -f "$HUGEPAGE_1G" ]; then
+    CURRENT_HP=$(cat "$HUGEPAGE_1G")
+    if [ "$CURRENT_HP" -lt 20 ]; then
+        echo "Allocating 20 x 1GB hugepages (currently $CURRENT_HP)..."
+        echo 20 > "$HUGEPAGE_1G"
+        ALLOCATED=$(cat "$HUGEPAGE_1G")
+        if [ "$ALLOCATED" -lt 20 ]; then
+            echo "WARNING: Only $ALLOCATED hugepages allocated (requested 20). System may not have enough contiguous memory."
+        else
+            echo "Hugepages OK: $ALLOCATED x 1GB allocated."
+        fi
+    else
+        echo "Hugepages already allocated: $CURRENT_HP x 1GB."
+    fi
 else
-    VLAN=$DEFAULT_FH_VLAN
-    echo "Could not read VLAN from manifest. Using default: $VLAN"
+    echo "WARNING: 1GB hugepage sysfs path not found. Ensure kernel supports 1G pages and GRUB is updated."
 fi
 
 MAX_RING_BUFFER_SIZE=$(ethtool -g $IF_NAME | grep "maxi" -A1 | awk '/RX/{print $2}')
@@ -71,12 +99,37 @@ ip link set $IF_NAME mtu $MTU
 modprobe iavf
 echo 0 > /sys/class/net/$IF_NAME/device/sriov_numvfs
 echo 2 > /sys/class/net/$IF_NAME/device/sriov_numvfs
-sleep 1
+sleep 2
+
+# Discover actual VF PCI addresses from sysfs
+U_PLANE_PCI_BUS_ADD=$(basename "$(readlink /sys/class/net/$IF_NAME/device/virtfn0)")
+C_PLANE_PCI_BUS_ADD=$(basename "$(readlink /sys/class/net/$IF_NAME/device/virtfn1)")
+if [[ -z "$U_PLANE_PCI_BUS_ADD" || -z "$C_PLANE_PCI_BUS_ADD" ]]; then
+    echo "ERROR: Could not discover VF PCI addresses from /sys/class/net/$IF_NAME/device/virtfn0/1"
+    exit 1
+fi
+echo "Discovered VF PCI addresses: VF0=$U_PLANE_PCI_BUS_ADD  VF1=$C_PLANE_PCI_BUS_ADD"
+
+# Write PCI addresses to state file so other scripts (e.g. setup-oai_v2.sh) can read them
+SRIOV_STATE_FILE=/run/oai-sriov-pci.env
+printf 'U_PLANE_PCI_BUS_ADD=%s\nC_PLANE_PCI_BUS_ADD=%s\n' \
+    "$U_PLANE_PCI_BUS_ADD" "$C_PLANE_PCI_BUS_ADD" > "$SRIOV_STATE_FILE"
+echo "PCI state written to $SRIOV_STATE_FILE"
+
+# Always patch dpdk_devices in the gNB conf with the real VF PCI addresses
+GNB_CONF=/home/ubuntu/Desktop/Test_OAI/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf
+if [ -f "$GNB_CONF" ]; then
+    sed -i "s|dpdk_devices = (\"[^\"]*\", \"[^\"]*\")|dpdk_devices = (\"${U_PLANE_PCI_BUS_ADD}\", \"${C_PLANE_PCI_BUS_ADD}\")|" "$GNB_CONF"
+    echo "Patched dpdk_devices in $GNB_CONF: (\"$U_PLANE_PCI_BUS_ADD\", \"$C_PLANE_PCI_BUS_ADD\")"
+else
+    echo "WARNING: gNB conf not found at $GNB_CONF — dpdk_devices not patched"
+fi
+
 ip a
 
-ip link set $IF_NAME vf 0 mac $DU_MAC_ADD vlan $VLAN mtu $MTU
+ip link set $IF_NAME vf 0 mac $DU_U_PLANE_MAC_ADD vlan $VLAN mtu $MTU
 ip link set $IF_NAME vf 0 spoofchk off
-ip link set $IF_NAME vf 1 mac $DU_MAC_ADD vlan $VLAN mtu $MTU
+ip link set $IF_NAME vf 1 mac $DU_C_PLANE_MAC_ADD vlan $VLAN mtu $MTU
 ip link set $IF_NAME vf 1 spoofchk off
 sleep 1
 
@@ -84,8 +137,8 @@ ifconfig $IF_VF0 0
 ifconfig $IF_VF1 0
 dpdk-devbind.py --unbind $U_PLANE_PCI_BUS_ADD
 dpdk-devbind.py --unbind $C_PLANE_PCI_BUS_ADD
-modprobe $DRIVER
+modprobe vfio-pci || modprobe vfio_pci
 dpdk-devbind.py --bind vfio-pci $U_PLANE_PCI_BUS_ADD
 dpdk-devbind.py --bind vfio-pci $C_PLANE_PCI_BUS_ADD
 dpdk-devbind.py -s
-echo "SR-IOV configured: VFs $IF_VF0 and $IF_VF1 bound to vfio-pci"
+echo "SR-IOV configured: VFs $IF_VF0 (U-plane, $U_PLANE_PCI_BUS_ADD) and $IF_VF1 (C-plane, $C_PLANE_PCI_BUS_ADD) bound to vfio-pci"

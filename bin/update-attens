@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ATTEN_SCRIPT=/local/repository/bin/atten
+ATTEN_SCRIPT=~/Desktop/Test_OAI//bin/atten
 RU=$1
 ATTEN=$2
 BRU1_PATHS=(29 30 61 62 93 94 125 126 31 32 63 64 95 96 127 128)

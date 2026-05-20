@@ -9,7 +9,7 @@ Environment=PYTHONUNBUFFERED=1
 Type=simple
 Restart=always
 RestartSec=1
-ExecStart=/local/repository/quectel_control.py
+ExecStart=~/Desktop/Test_OAI//quectel_control.py
 
 [Install]
 WantedBy=multi-user.target

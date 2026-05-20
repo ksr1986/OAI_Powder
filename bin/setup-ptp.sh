@@ -9,7 +9,7 @@
 PROFILE="G8275-1"
 
 # Path to our installed repository directory
-REPO=/local/repository
+REPO=~/Desktop/Test_OAI/
 
 # Sanity checks
 if [ $UID -ne 0 ]; then

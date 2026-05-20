@@ -13,11 +13,11 @@ import geni.rspec.emulab.lanext as lanext
 # TODO: Update tourDescription for OAI deployment
 # tourDescription was: "### srsRAN 5G, VVDN COTS O-RUs, COTS UE in RF matrix"
 tourDescription = """
-### OAI 5G gNB, Benetel O-RU: CN + CUDU + RU topology (no UE)
+### OAI 5G gNB, Benetel O-RU: CN + CUDU + RU + UE topology
 """
 
 tourInstructions = """
-CN + CUDU + RU topology (no UE).
+CN + CUDU + RU + UE (nuc16) topology.
 
 #### Start the OAI gNB on `cudu`:
 ```
@@ -25,6 +25,30 @@ sudo /local/openairinterface5g/cmake_targets/ran_build/build/nr-softmodem -O /lo
 ```
 
 Check `ptp4l` and `phc2sys` status on `cudu` before starting gNB, and verify O-RU status.
+
+#### On `ue1` (nuc16), connect UE:
+```
+sudo quectel-CM -s internet -4
+```
+
+In another terminal on `ue1`:
+```
+sudo minicom -D /dev/ttyUSB2
+```
+
+AT commands for UE control (within minicom):
+```
+# bring UE online
+at+cfun=1
+
+# put UE in airplane mode
+at+cfun=4
+
+# check serving cell
+at+qeng="servingcell"
+```
+
+After attach, UE should be able to ping gateway at 10.45.0.1.
 
 # OAI gNB conf file: `/local/repository/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf`
 
@@ -36,6 +60,7 @@ BIN_PATH = "/local/repository/bin"
 ETC_PATH = "/local/repository/etc"
 UBUNTU_IMG = "urn:publicid:IDN+emulab.net+image+emulab-ops//UBUNTU22-64-STD"
 UBUNTU_DPDK_IMG = "urn:publicid:IDN+emulab.net+image+DriveSafe:ubuntu2204-dpdk-iso"
+COTS_UE_IMG = "urn:publicid:IDN+emulab.net+image+PowderTeam:cots-jammy-image"
 COMP_MANAGER_ID = "urn:publicid:IDN+emulab.net+authority+cm"
 # DEFAULT_SRSRAN_HASH = "cdc93a60920dfbb2727910f84966068b8e75004d"  # late sept 2025 [SRSRAN - DISABLED]
 OPEN5GS_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "deploy-open5gs.sh")
@@ -45,10 +70,27 @@ OAI_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "setup-oai.sh")
 NODE_IDS = {
     #"ru1": "vmpru-b48-1",
     "ru1": "bru-650-5",
+    "ue1": "nuc16",
 }
-#MATRIX_INPUTS = ["ru1", "ru2"]
-#MATRIX_INPUTS = ["ru1"]
-# (RF matrix removed: no UE in this topology)
+MATRIX_GRAPH = {
+    "ru1": ["ue1"],
+    "ue1": ["ru1"],
+}
+MATRIX_INPUTS = ["ru1"]
+RF_IFACES = {}
+RF_LINK_NAMES = {}
+for k, v in MATRIX_GRAPH.items():
+    RF_IFACES[k] = {}
+    for node in (v):
+        RF_IFACES[k][node] = "{}_{}_rf".format(k, node)
+        if k in MATRIX_INPUTS:
+            RF_LINK_NAMES["rflink_{}_{}".format(k, node)] = []
+
+for k, v in MATRIX_GRAPH.items():
+    if k in MATRIX_INPUTS:
+        for node in (v):
+            RF_LINK_NAMES["rflink_{}_{}".format(k, node)].append(RF_IFACES[k][node])
+            RF_LINK_NAMES["rflink_{}_{}".format(k, node)].append(RF_IFACES[node][k])
 
 
 pc = portal.Context()
@@ -186,6 +228,9 @@ cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-a
 #cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-attens bru2 95"))
 cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-ru-vlan.sh"))
 
+# collect node objects for RF matrix
+matrix_nodes = {}
+
 # benetel RU 1
 node_name = "ru1"
 ru1 = request.RawPC(node_name)
@@ -199,6 +244,7 @@ duru1t = request.Link("duru1t", members=[duru1ofh, ru1duofh])
 duru1t.vlan_tagging = True  # Let Emulab auto-configure VLAN on fronthaul link
 # duru1t.setVlanTag(params.vlan_id_ru1)
 ru1.Desire("rf-controlled", 1)
+matrix_nodes[node_name] = ru1
 
 # benetel RU 2
 #node_name = "ru2"
@@ -214,6 +260,38 @@ ru1.Desire("rf-controlled", 1)
 #duru2t.setVlanTag(params.vlan_id_ru2)
 #ru2.Desire("rf-controlled", 1)
 #matrix_nodes[node_name] = ru2
+
+# COTS UEs
+node_name = "ue1"
+ue1 = request.RawPC(node_name)
+ue1.component_manager_id = COMP_MANAGER_ID
+ue1.component_id = NODE_IDS[node_name]
+ue1.disk_image = COTS_UE_IMG
+ue1.Desire("rf-controlled", 1)
+ue1.addService(pg.Execute(shell="bash", command="/local/repository/bin/module-airplane.sh"))
+ue1.addService(pg.Execute(shell="bash", command="/local/repository/bin/setup-cots-ue.sh internet"))
+matrix_nodes[node_name] = ue1
+
+#node_name = "ue2"
+#ue2 = request.RawPC(node_name)
+#ue2.component_manager_id = COMP_MANAGER_ID
+#ue2.component_id = NODE_IDS[node_name]
+#ue2.disk_image = COTS_UE_IMG
+#ue2.Desire("rf-controlled", 1)
+#ue2.addService(pg.Execute(shell="bash", command="/local/repository/bin/module-airplane.sh"))
+#ue2.addService(pg.Execute(shell="bash", command="/local/repository/bin/setup-cots-ue.sh internet"))
+#matrix_nodes[node_name] = ue2
+
+rf_ifaces = {}
+for node_name, node in matrix_nodes.items():
+    for rf_iface_name in RF_IFACES[node_name].values():
+        rf_ifaces[rf_iface_name] = node.addInterface(rf_iface_name)
+
+for rf_link_name, rf_iface_names in RF_LINK_NAMES.items():
+    rf_link = request.RFLink(rf_link_name)
+    for iface_name in rf_iface_names:
+        rf_link.addInterface(rf_ifaces[iface_name])
+
 
 tour = ig.Tour()
 tour.Description(ig.Tour.MARKDOWN, tourDescription)
