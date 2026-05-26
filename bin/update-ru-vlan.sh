@@ -19,7 +19,7 @@ RU_IP=10.10.2.2
 SCP_ARGS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
 # Hardcoded VLAN ID (was previously read from manifest or detected via interface)
-VLAN_ID=168
+VLAN_ID=193
 echo "Using hardcoded VLAN ID $VLAN_ID."
 
 # --- Method 1 (disabled): read VLAN ID, RU IP, and cudu fronthaul IP from manifest via geni-get ---

@@ -17,7 +17,7 @@ BUILDDIR=/home/ubuntu/Desktop/Test_OAI/local_install/build
 OAI_PROJECT_REPO="https://gitlab.eurecom.fr/oai/openairinterface5g"
 
 # Fronthaul VLAN (assigned by Emulab; 168 is the known value for this experiment)
-DEFAULT_FH_VLAN=168
+DEFAULT_FH_VLAN=193
 
 # OAI gNB and RU management IPs
 OAI_GNB_IP=100.71.86.222
@@ -27,8 +27,8 @@ RU_IP=100.71.86.231
 FH_PTP_IFACE=eno12409
 
 # DU FH MAC address assignments for VF 0/1
-DU_U_PLANE_MAC_ADD=30:3e:a7:1a:9f:49
-DU_C_PLANE_MAC_ADD=30:3e:a7:1a:9f:4a
+DU_U_PLANE_MAC_ADD=30:3e:a7:1a:8e:71
+DU_C_PLANE_MAC_ADD=30:3e:a7:1a:8e:72
 
 # RU MAC address (used in OAI gNB conf ru_addr)
 RU_MAC=8c:1f:64:d1:15:0e
@@ -270,7 +270,7 @@ sed -i "s|dpdk_devices = (\"[^\"]*\", \"[^\"]*\")|dpdk_devices = (\"${U_PLANE_PC
 echo "dpdk_devices patched: (\"$U_PLANE_PCI_BUS_ADD\", \"$C_PLANE_PCI_BUS_ADD\")"
 
 # Expose VLAN value for step 7 (keep in sync with sriov_conf.sh)
-VLAN=168
+VLAN=193
 
 # ============================================================
 # 9. INSTALL SYSTEMD SERVICES

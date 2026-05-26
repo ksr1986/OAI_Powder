@@ -8,7 +8,7 @@ OAI_PROJECT_REPO="https://gitlab.eurecom.fr/oai/openairinterface5g"
 # Default VLAN ID for the DU-RU fronthaul link.
 # Used as fallback when the manifest cannot be read.
 # Must be the same on both DU (sriov_conf.sh) and RU (ru_config.cfg).
-DEFAULT_FH_VLAN=168
+DEFAULT_FH_VLAN=193
 
 # Helper: read the fronthaul VLAN ID from the experiment manifest.
 # Prints the VLAN ID (decimal) to stdout, or nothing on failure.
