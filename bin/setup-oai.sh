@@ -19,8 +19,8 @@ OAI_PROJECT_REPO="https://gitlab.eurecom.fr/oai/openairinterface5g"
 DEFAULT_FH_VLAN=193
 
 # DU MAC address (cudu eth1 / cuduru1ofh interface MAC)
-DU_U_PLANE_MAC_ADD=30:3e:a7:1a:8e:71
-DU_C_PLANE_MAC_ADD=30:3e:a7:1a:8e:72
+DU_U_PLANE_MAC_ADD=30:3e:a7:1a:8e:49
+DU_C_PLANE_MAC_ADD=30:3e:a7:1a:8e:48
 
 # RU MAC address (used in OAI gNB conf ru_addr)
 RU_MAC=8c:1f:64:d1:15:0e

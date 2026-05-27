@@ -22,8 +22,8 @@ C_PLANE_PCI_BUS_ADD=""
 
 MTU=8192
 # U-plane MAC assigned to VF0, C-plane MAC assigned to VF1
-DU_U_PLANE_MAC_ADD=30:3e:a7:1a:8e:71
-DU_C_PLANE_MAC_ADD=30:3e:a7:1a:8e:72
+DU_U_PLANE_MAC_ADD=30:3e:a7:1a:8e:49
+DU_C_PLANE_MAC_ADD=30:3e:a7:1a:8e:48
 DRIVER=vfio_pci
 
 # ============================================================
