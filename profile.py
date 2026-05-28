@@ -8,6 +8,8 @@ import geni.rspec.igext as ig
 import geni.rspec.emulab.pnext as pn
 import geni.rspec.emulab as emulab
 import geni.rspec.emulab.lanext as lanext
+import geni.rspec.emulab.spectrum as spectrum
+import geni.rspec.emulab.cotsru as cotsru
 
 
 # TODO: Update tourDescription for OAI deployment
@@ -230,12 +232,18 @@ cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-r
 
 # collect node objects for RF matrix
 matrix_nodes = {}
+ru_mimo_mode = "1_2_3_4_4x2"
 
+du_mac_addr ="30:3e:a7:1a:8e:49"
+ru_type = "bt-ru650"
+nr_arfcn = 650000 #Corresponds to 3750 MHz
+bandwidth_mhz = 40 #Bandwidth in MHz
 # benetel RU 1
 node_name = "ru1"
-ru1 = request.RawPC(node_name)
+#ru1 = request.RawPC(node_name)
+ru1 = request.COTSRU(client_id=node_name, hardware_type=ru_type, arfcn=nr_arfcn, bandwidth=bandwidth_mhz, mimo_mode=ru_mimo_mode, du_mac = du_mac_addr,component_id=NODE_IDS[node_name])
 ru1.component_manager_id = COMP_MANAGER_ID
-ru1.component_id = NODE_IDS[node_name]
+#ru1.component_id = NODE_IDS[node_name]
 ru1duofh = ru1.addInterface("{}duofh".format(node_name))
 ru1duofh.component_id = "eth0"
 ru1duofh.PTP()
