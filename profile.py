@@ -236,7 +236,8 @@ ru_mimo_mode = "1_2_3_4_4x2"
 
 du_mac_addr ="30:3e:a7:1a:8e:49"
 ru_type = "bt-ru650"
-nr_arfcn = 650000 #Corresponds to 3750 MHz
+#nr_arfcn = 650000 #Corresponds to 3750 MHz
+nr_arfcn = 3750 #Corresponds to 3750 MHz
 bandwidth_mhz = 40 #Bandwidth in MHz
 # benetel RU 1
 node_name = "ru1"
