@@ -16,7 +16,7 @@ BUILDDIR=/local
 OAI_PROJECT_REPO="https://gitlab.eurecom.fr/oai/openairinterface5g"
 
 # Fronthaul VLAN (assigned by Emulab; 168 is the known value for this experiment)
-DEFAULT_FH_VLAN=193
+DEFAULT_FH_VLAN=134
 
 # DU MAC address (cudu eth1 / cuduru1ofh interface MAC)
 DU_U_PLANE_MAC_ADD=30:3e:a7:1a:8e:49
@@ -262,7 +262,7 @@ sed -i "s|dpdk_devices = (\"[^\"]*\", \"[^\"]*\")|dpdk_devices = (\"${U_PLANE_PC
 echo "dpdk_devices patched: (\"$U_PLANE_PCI_BUS_ADD\", \"$U_PLANE_PCI_BUS_ADD\") (1 VF, same PCI for both planes)"
 
 # Expose VLAN value for step 7 (keep in sync with sriov_conf.sh)
-VLAN=193
+VLAN=134
 
 # ============================================================
 # 9. INSTALL SYSTEMD SERVICES

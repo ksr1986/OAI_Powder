@@ -8,7 +8,7 @@ set -euo pipefail
 # CONFIGURATION — edit these if hardware changes
 # ============================================================
 # Fronthaul VLAN (decimal; must match RU config which stores it as hex)
-DEFAULT_FH_VLAN=193
+DEFAULT_FH_VLAN=134
 
 # SR-IOV physical function interface (eCPRI DPDK port)
 IF_NAME=eno12409
@@ -67,7 +67,7 @@ fi
 #     VLAN=$DEFAULT_FH_VLAN
 #     echo "Could not read VLAN from manifest. Using default: $VLAN"
 # fi
-VLAN=193
+VLAN=134
 echo "Using hardcoded VLAN $VLAN."
 
 # ============================================================
