@@ -100,16 +100,16 @@ fi
 # 2. REALTIME KERNEL SELECTION
 # ============================================================
 # Switch default boot entry to the realtime kernel.
-echo "Setting realtime kernel as default boot entry..."
-sed -i 's/^GRUB_DEFAULT=.*/GRUB_DEFAULT=saved/' /etc/default/grub
-RT_ENTRY=$(egrep "^[[:space:]]?(submenu|menuentry)" /boot/grub/grub.cfg \
-    | cut -d "'" -f2 | grep -i realtime | head -1)
-if [ -n "$RT_ENTRY" ]; then
-    grub-set-default "Advanced options for Ubuntu>$RT_ENTRY"
-    echo "Realtime kernel set: $RT_ENTRY"
-else
-    echo "WARNING: Realtime kernel entry not found in grub.cfg. Install linux-image-realtime and rerun."
-fi
+##echo "Setting realtime kernel as default boot entry..."
+##sed -i 's/^GRUB_DEFAULT=.*/GRUB_DEFAULT=saved/' /etc/default/grub
+##RT_ENTRY=$(egrep "^[[:space:]]?(submenu|menuentry)" /boot/grub/grub.cfg \
+##    | cut -d "'" -f2 | grep -i realtime | head -1)
+##if [ -n "$RT_ENTRY" ]; then
+##    grub-set-default "Advanced options for Ubuntu>$RT_ENTRY"
+##    echo "Realtime kernel set: $RT_ENTRY"
+##else
+##    echo "WARNING: Realtime kernel entry not found in grub.cfg. Install linux-image-realtime and rerun."
+##fi
 
 # ============================================================
 # 3. GRUB KERNEL PARAMETERS
