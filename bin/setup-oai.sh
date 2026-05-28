@@ -20,7 +20,7 @@ DEFAULT_FH_VLAN=193
 
 # DU MAC address (cudu eth1 / cuduru1ofh interface MAC)
 DU_U_PLANE_MAC_ADD=30:3e:a7:1a:8e:49
-DU_C_PLANE_MAC_ADD=30:3e:a7:1a:8e:49
+#DU_C_PLANE_MAC_ADD=30:3e:a7:1a:8e:49  # only 1 VF; same MAC used for both planes
 
 # RU MAC address (used in OAI gNB conf ru_addr)
 RU_MAC=8c:1f:64:d1:15:0e
@@ -28,11 +28,11 @@ RU_MAC=8c:1f:64:d1:15:0e
 # SR-IOV physical function interface (eCPRI DPDK port)
 IF_NAME=eno12409
 IF_VF0=eno12409v0
-IF_VF1=eno12409v1
+#IF_VF1=eno12409v1  # only 1 VF used
 
-# PCI bus addresses of the two VFs
+# PCI bus address of the single VF
 U_PLANE_PCI_BUS_ADD=0000:43:09.0
-C_PLANE_PCI_BUS_ADD=0000:43:09.1
+#C_PLANE_PCI_BUS_ADD=0000:43:09.1  # only 1 VF; same PCI address used for both planes
 
 MTU=8192
 DRIVER=vfio_pci
@@ -250,7 +250,7 @@ fi
 SRIOV_STATE_FILE=/run/oai-sriov-pci.env
 if [ -f "$SRIOV_STATE_FILE" ]; then
     source "$SRIOV_STATE_FILE"
-    echo "Loaded VF PCI addresses: U-plane=$U_PLANE_PCI_BUS_ADD  C-plane=$C_PLANE_PCI_BUS_ADD"
+    echo "Loaded VF PCI address: U-plane=$U_PLANE_PCI_BUS_ADD (used for both U and C plane)"
 else
     echo "ERROR: $SRIOV_STATE_FILE not found after sriov_conf.sh. Cannot patch gNB conf."
     exit 1
@@ -258,8 +258,8 @@ fi
 
 # Patch dpdk_devices in OAI gNB conf with the real VF PCI addresses
 echo "Patching dpdk_devices in $OAI_GNB_CONF..."
-sed -i "s|dpdk_devices = (\"[^\"]*\", \"[^\"]*\")|dpdk_devices = (\"${U_PLANE_PCI_BUS_ADD}\", \"${C_PLANE_PCI_BUS_ADD}\")|" "$OAI_GNB_CONF"
-echo "dpdk_devices patched: (\"$U_PLANE_PCI_BUS_ADD\", \"$C_PLANE_PCI_BUS_ADD\")"
+sed -i "s|dpdk_devices = (\"[^\"]*\", \"[^\"]*\")|dpdk_devices = (\"${U_PLANE_PCI_BUS_ADD}\", \"${U_PLANE_PCI_BUS_ADD}\")|" "$OAI_GNB_CONF"
+echo "dpdk_devices patched: (\"$U_PLANE_PCI_BUS_ADD\", \"$U_PLANE_PCI_BUS_ADD\") (1 VF, same PCI for both planes)"
 
 # Expose VLAN value for step 7 (keep in sync with sriov_conf.sh)
 VLAN=193
