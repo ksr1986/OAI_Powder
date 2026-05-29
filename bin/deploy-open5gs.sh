@@ -73,6 +73,9 @@ sudo systemctl restart open5gs-scp 2>/dev/null || true
 cd $SRCDIR
 wget https://raw.githubusercontent.com/open5gs/open5gs/main/misc/db/open5gs-dbctl
 chmod +x open5gs-dbctl
+# open5gs-dbctl uses 'mongosh' by default; patch it to use legacy 'mongo' shell
+# which ships with MongoDB 4.2
+sed -i 's/mongosh/mongo/g' open5gs-dbctl
 ./open5gs-dbctl add_ue_with_slice 999990000000103 00112233445566778899aabbccddeeff 0ed47545168eafe2c39c075829a7b61f internet 1 000001 # IMSI,K,OPC
 ./open5gs-dbctl type 999990000000103 1  # APN type IPV4
 ./open5gs-dbctl static_ip 999990000000103 10.45.0.103
