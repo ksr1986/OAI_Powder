@@ -102,68 +102,7 @@ node_types = [
     ("d430", "Emulab, d430"),
     ("d740", "Emulab, d740"),
 ]
-# pc.defineParameter(
-#     name="sdr_nodetype",
-#     description="Type of compute node paired with the SDRs",
-#     typ=portal.ParameterType.STRING,
-#     defaultValue=node_types[2],
-#     legalValues=node_types
-# )
 
-# pc.defineParameter(
-#     name="cn_nodetype",
-#     description="Type of compute node to use for CN node (if included)",
-#     typ=portal.ParameterType.STRING,
-#     defaultValue=node_types[0],
-#     legalValues=node_types
-# )
-
-# pc.defineParameter(
-#     name="cn_compute_id",
-#     description="Component ID for core network compute node",
-#     typ=portal.ParameterType.STRING,
-#     defaultValue="pc20-meb",
-# )
-
-# pc.defineParameter(
-#     name="cudu_compute_id",
-#     description="Component ID for compute node connected to RU",
-#     typ=portal.ParameterType.STRING,
-#     defaultValue="pc24-fort",
-# )
-
-# pc.defineParameter(
-#     name="vlan_id_ru1",
-#     description="VLAN ID for RU1",
-#     typ=portal.ParameterType.INTEGER,
-#     defaultValue=28,
-# )
-
-#pc.defineParameter(
-#    name="vlan_id_ru2",
-#    description="VLAN ID for RU2",
-#    typ=portal.ParameterType.INTEGER,
-#    defaultValue=29,
-#)
-
-# [SRSRAN - DISABLED] use_dpdk parameter (srsRAN-specific, not needed for OAI)
-# pc.defineParameter(
-#     name="use_dpdk",
-#     description="Use DPDK for srsRAN w/ O-RU CU/DU",
-#     typ=portal.ParameterType.BOOLEAN,
-#     defaultValue=True,
-#     advanced=True
-# )
-
-# [SRSRAN - DISABLED] srsran_commit_hash parameter
-# pc.defineParameter(
-#     name="srsran_commit_hash",
-#     description="Commit hash for srsRAN",
-#     typ=portal.ParameterType.STRING,
-#     defaultValue="",
-#     advanced=True
-# )
-# TODO: Add OAI commit hash parameter here
 
 pc.defineParameter(
     name="sdr_compute_image",
@@ -196,7 +135,6 @@ node_name = "cudu"
 cudu = request.RawPC(node_name)
 cudu.component_manager_id = COMP_MANAGER_ID
 cudu.hardware_type = "d760p"  # auto-select any available d760p
-# [SRSRAN - DISABLED] cudu.disk_image = UBUNTU_DPDK_IMG if params.use_dpdk else (params.sdr_compute_image if params.sdr_compute_image else UBUNTU_IMG)
 
 #We can install the regular ubuntu image and then install DPDK as part of the OAI deployment script.
 
@@ -210,18 +148,7 @@ duru1ofh = cudu.addInterface("{}ru1ofh".format(node_name))
 duru1ofh.component_id = "eth1"
 duru1ofh.PTP()
 #duru2ofh = cudu.addInterface("{}ru2ofh".format(node_name))
-#duru2ofh.component_id = "eth2"
 
-# [SRSRAN - DISABLED] SRS deployment command construction
-# if params.srsran_commit_hash:
-#     srsran_hash = params.srsran_commit_hash
-# else:
-#     srsran_hash = DEFAULT_SRSRAN_HASH
-#
-# if params.use_dpdk:
-#     cmd = "{} '{}' dpdk".format(SRSRAN_DEPLOY_SCRIPT, srsran_hash)
-# else:
-#     cmd = "{} '{}'".format(SRSRAN_DEPLOY_SCRIPT, srsran_hash)
 
 # Add OAI gNB deploy service here
 cudu.addService(pg.Execute(shell="bash", command=OAI_DEPLOY_SCRIPT))
@@ -255,21 +182,6 @@ duru1t.vlan_tagging = True  # Let Emulab auto-configure VLAN on fronthaul link
 ru1.Desire("rf-controlled", 1)
 matrix_nodes[node_name] = ru1
 
-# benetel RU 2
-#node_name = "ru2"
-#ru2 = request.RawPC(node_name)
-#ru2.component_manager_id = COMP_MANAGER_ID
-#ru2.component_id = NODE_IDS[node_name]
-#ru2duofh = ru2.addInterface("{}duofh".format(node_name))
-#ru2duofh.component_id = "eth0"
-#ru2duofh.PTP()
-#ru2duofh.SyncE()
-#duru2t = request.Link("duru2t", members=[duru2ofh, ru2duofh])
-#duru2t.vlan_tagging = True
-#duru2t.setVlanTag(params.vlan_id_ru2)
-#ru2.Desire("rf-controlled", 1)
-#matrix_nodes[node_name] = ru2
-
 # COTS UEs
 node_name = "ue1"
 ue1 = request.RawPC(node_name)
@@ -281,15 +193,6 @@ ue1.addService(pg.Execute(shell="bash", command="/local/repository/bin/module-ai
 ue1.addService(pg.Execute(shell="bash", command="/local/repository/bin/setup-cots-ue.sh internet"))
 matrix_nodes[node_name] = ue1
 
-#node_name = "ue2"
-#ue2 = request.RawPC(node_name)
-#ue2.component_manager_id = COMP_MANAGER_ID
-#ue2.component_id = NODE_IDS[node_name]
-#ue2.disk_image = COTS_UE_IMG
-#ue2.Desire("rf-controlled", 1)
-#ue2.addService(pg.Execute(shell="bash", command="/local/repository/bin/module-airplane.sh"))
-#ue2.addService(pg.Execute(shell="bash", command="/local/repository/bin/setup-cots-ue.sh internet"))
-#matrix_nodes[node_name] = ue2
 
 rf_ifaces = {}
 for node_name, node in matrix_nodes.items():
