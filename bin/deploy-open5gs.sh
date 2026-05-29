@@ -1,8 +1,16 @@
 #!/bin/bash
 set -ex
-BINDIR=`dirname $0`
-source $BINDIR/common.sh
 
+# ============================================================
+# CONFIGURATION
+# ============================================================
+BINDIR=/local/repository/bin
+SRCDIR=/local/repository
+ETCDIR=/local/repository/etc
+
+# Enable IP forwarding and NAT so UEs (10.45.0.0/16) can reach the internet
+# via the CN node. MASQUERADE rewrites UE source IPs on packets leaving
+# the node (excluding traffic going back into the ogstun tunnel itself).
 sudo sysctl -w net.ipv4.ip_forward=1
 sudo iptables -t nat -A POSTROUTING -s 10.45.0.0/16 ! -o ogstun -j MASQUERADE
 
@@ -33,7 +41,7 @@ sudo apt install -y \
 sudo systemctl start mongod
 sudo systemctl enable mongod
 sudo apt install -y open5gs
-sudo cp ~/Desktop/Test_OAI//etc/open5gs/* /etc/open5gs/
+sudo cp $ETCDIR/open5gs/* /etc/open5gs/
 
 sudo systemctl restart open5gs-mmed
 sudo systemctl restart open5gs-sgwcd
