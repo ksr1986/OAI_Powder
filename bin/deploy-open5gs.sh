@@ -50,21 +50,25 @@ sudo apt install -y \
 sudo apt install -y open5gs
 sudo cp $ETCDIR/open5gs/* /etc/open5gs/
 
-sudo systemctl restart open5gs-mmed
-sudo systemctl restart open5gs-sgwcd
-sudo systemctl restart open5gs-smfd
-sudo systemctl restart open5gs-amfd
-sudo systemctl restart open5gs-sgwud
-sudo systemctl restart open5gs-upfd
-sudo systemctl restart open5gs-hssd
-sudo systemctl restart open5gs-pcrfd
+# 5G SA core services
 sudo systemctl restart open5gs-nrfd
 sudo systemctl restart open5gs-ausfd
 sudo systemctl restart open5gs-udmd
+sudo systemctl restart open5gs-udrd
 sudo systemctl restart open5gs-pcfd
 sudo systemctl restart open5gs-nssfd
 sudo systemctl restart open5gs-bsfd
-sudo systemctl restart open5gs-udrd
+sudo systemctl restart open5gs-amfd
+sudo systemctl restart open5gs-smfd
+sudo systemctl restart open5gs-upfd
+sudo systemctl restart open5gs-scp 2>/dev/null || true
+
+# 4G/EPC services — masked in 5G-SA mode, skip
+# sudo systemctl restart open5gs-mmed
+# sudo systemctl restart open5gs-sgwcd
+# sudo systemctl restart open5gs-sgwud
+# sudo systemctl restart open5gs-hssd
+# sudo systemctl restart open5gs-pcrfd
 
 cd $SRCDIR
 wget https://raw.githubusercontent.com/open5gs/open5gs/main/misc/db/open5gs-dbctl
