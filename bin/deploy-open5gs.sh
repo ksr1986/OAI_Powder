@@ -20,26 +20,33 @@ if [ -f $SRCDIR/open5gs-setup-complete ]; then
 fi
 
 sudo apt update
-sudo apt install -y software-properties-common
+sudo apt install -y software-properties-common gnupg curl
 sudo add-apt-repository -y ppa:open5gs/latest
 sudo add-apt-repository -y ppa:wireshark-dev/stable
 echo "wireshark-common wireshark-common/install-setuid boolean false" | sudo debconf-set-selections
 sudo apt update
-sudo apt-get install gnupg
-curl -fsSL https://pgp.mongodb.com/server-6.0.asc | \
-    sudo gpg -o /usr/share/keyrings/mongodb-server-6.0.gpg --dearmor
-echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/6.0 multiverse" | \
-    sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+
+# Install libssl1.1 from Ubuntu 20.04 (focal) — required by MongoDB 4.2 on Ubuntu 22.04
+echo "deb http://security.ubuntu.com/ubuntu focal-security main" | \
+    sudo tee /etc/apt/sources.list.d/focal-security.list
 sudo apt update
-sudo apt install -y \
-    mongodb-org \
-    mongodb-mongosh \
-    nginx \
-    tshark \
-    wireshark
+sudo apt install -y libssl1.1
+sudo rm /etc/apt/sources.list.d/focal-security.list
+
+# Install MongoDB 4.2 (compatible with older CPUs without AVX, e.g. Xeon E5xxx)
+curl -fsSL https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" | \
+    sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
+sudo apt update
+sudo apt install -y mongodb-org
 
 sudo systemctl start mongod
 sudo systemctl enable mongod
+
+sudo apt install -y \
+    nginx \
+    tshark \
+    wireshark
 sudo apt install -y open5gs
 sudo cp $ETCDIR/open5gs/* /etc/open5gs/
 
