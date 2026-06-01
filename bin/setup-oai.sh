@@ -261,8 +261,40 @@ echo "Patching dpdk_devices in $OAI_GNB_CONF..."
 sed -i "s|dpdk_devices = (\"[^\"]*\", \"[^\"]*\")|dpdk_devices = (\"${U_PLANE_PCI_BUS_ADD}\", \"${U_PLANE_PCI_BUS_ADD}\")|" "$OAI_GNB_CONF"
 echo "dpdk_devices patched: (\"$U_PLANE_PCI_BUS_ADD\", \"$U_PLANE_PCI_BUS_ADD\") (1 VF, same PCI for both planes)"
 
-# Expose VLAN value for step 7 (keep in sync with sriov_conf.sh)
-VLAN=134
+# Read fronthaul VLAN from Emulab experiment manifest (duru1t link).
+# Falls back to DEFAULT_FH_VLAN if geni-get is unavailable or manifest parse fails.
+if command -v geni-get &>/dev/null; then
+    MANIFEST_VLAN=$(geni-get manifest 2>/dev/null | python3 - <<'PYEOF'
+import sys, xml.etree.ElementTree as ET
+try:
+    root = ET.parse(sys.stdin).getroot()
+    ns = root.tag.split('}')[0].lstrip('{') if '}' in root.tag else ''
+    pfx = ('{%s}' % ns) if ns else ''
+    for link in root.iter('%slink' % pfx):
+        if link.get('client_id') == 'duru1t':
+            vlan = link.get('vlantag', '').strip()
+            if vlan:
+                print(vlan)
+            break
+except Exception as e:
+    sys.stderr.write("manifest parse error: %s\n" % e)
+PYEOF
+)
+    if [[ "$MANIFEST_VLAN" =~ ^[0-9]+$ ]]; then
+        VLAN=$MANIFEST_VLAN
+        echo "Read VLAN $VLAN from experiment manifest."
+    else
+        VLAN=$DEFAULT_FH_VLAN
+        echo "Could not read VLAN from manifest. Using default: $VLAN"
+    fi
+else
+    VLAN=$DEFAULT_FH_VLAN
+    echo "geni-get not available. Using default VLAN: $VLAN"
+fi
+
+# Patch VLAN into sriov_conf.sh so it uses the manifest-assigned value
+sed -i "s/^VLAN=.*/VLAN=${VLAN}/" "$BINDIR/sriov_conf.sh"
+echo "sriov_conf.sh patched with VLAN=${VLAN}"
 
 # ============================================================
 # 9. INSTALL SYSTEMD SERVICES
