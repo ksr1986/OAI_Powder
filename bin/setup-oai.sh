@@ -3,6 +3,41 @@
 # Run order: packages → GRUB → PTP → DPDK → OAI build → libxran → SR-IOV
 # Standalone: does not rely on common.sh
 # Must be run as root (sudo).
+#
+# Usage: sudo bash setup-oai.sh -vlan <VLAN_ID>
+#   -vlan <VLAN_ID>  Fronthaul VLAN ID assigned by Emulab for the duru1t link (REQUIRED)
+#
+# Example: sudo bash setup-oai.sh -vlan 134
+
+# ============================================================
+# ARGUMENT PARSING
+# ============================================================
+DEFAULT_FH_VLAN=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -vlan)
+            DEFAULT_FH_VLAN="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: sudo bash setup-oai.sh -vlan <VLAN_ID>"
+            exit 1
+            ;;
+    esac
+done
+
+if [[ -z "$DEFAULT_FH_VLAN" ]]; then
+    echo "ERROR: -vlan <VLAN_ID> is required."
+    echo ""
+    echo "  The fronthaul VLAN ID is assigned by Emulab for the duru1t link."
+    echo "  Find it in the experiment manifest under the 'duru1t' link vlantag attribute."
+    echo ""
+    echo "  Usage: sudo bash setup-oai.sh -vlan <VLAN_ID>"
+    echo "  Example: sudo bash setup-oai.sh -vlan 134"
+    exit 1
+fi
 
 # ============================================================
 # CONFIGURATION — edit these if hardware changes
@@ -14,9 +49,6 @@ SRCDIR=/local/repository
 BUILDDIR=/local
 
 OAI_PROJECT_REPO="https://gitlab.eurecom.fr/oai/openairinterface5g"
-
-# Fronthaul VLAN (assigned by Emulab; 168 is the known value for this experiment)
-DEFAULT_FH_VLAN=134
 
 # DU MAC address (cudu eth1 / cuduru1ofh interface MAC)
 DU_U_PLANE_MAC_ADD=30:3e:a7:1a:8e:49
