@@ -343,6 +343,10 @@ fi
 sed -i "s/^VLAN=.*/VLAN=${VLAN}/" "$BINDIR/sriov_conf.sh"
 echo "sriov_conf.sh patched with VLAN=${VLAN}"
 
+# Ensure sriov_conf.sh is executable
+chmod 770 "$BINDIR/sriov_conf.sh"
+echo "Permissions set: chmod 770 sriov_conf.sh"
+
 # ============================================================
 # 9. INSTALL SYSTEMD SERVICES
 # ============================================================
@@ -354,6 +358,11 @@ systemctl daemon-reload
 systemctl enable oai-sriov.service
 echo "oai-sriov.service installed and enabled (runs sriov_conf.sh on every boot)."
 echo "oai-gnb.service installed (start manually: systemctl start oai-gnb)."
+
+# Run SR-IOV configuration immediately now that VLAN is patched in
+echo "Running sriov_conf.sh to configure SR-IOV..."
+bash "$BINDIR/sriov_conf.sh"
+echo "SR-IOV configuration complete."
 
 touch /home/ubuntu/Desktop/Test_OAI/.oai-setup-complete
 echo "Setup complete: DPDK, PTP, libxran, OAI gNB, and SR-IOV are ready."
