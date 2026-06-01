@@ -149,7 +149,7 @@ else
     echo "Configuring ptp4l/phc2sys on $IFACE..."
 
     # Install ptp.conf
-    cp "$ETCDIR/ptp4l/ptp.conf" /etc/ptp.conf
+    cp "$ETCDIR/ptp4l/ptp.conf" /etc/ptp4l.conf
 
     # Install standalone ptp4l and phc2sys services
     cp "$ETCDIR/services/ptp4l.service"  /etc/systemd/system/ptp4l.service
