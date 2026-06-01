@@ -5,9 +5,13 @@
 # Must be run as root (sudo).
 #
 # Usage: sudo bash setup-oai.sh -vlan <VLAN_ID>
-#   -vlan <VLAN_ID>  Fronthaul VLAN ID assigned by Emulab for the duru1t link (REQUIRED)
+#   -vlan <VLAN_ID>  Fronthaul VLAN ID assigned by Emulab for the duru1t link (REQUIRED).
+#                    If you do not know the VLAN ID, pass 0 and the script will
+#                    automatically read it from the Emulab experiment manifest.
 #
-# Example: sudo bash setup-oai.sh -vlan 134
+# Examples:
+#   sudo bash setup-oai.sh -vlan 134   # use a known VLAN ID
+#   sudo bash setup-oai.sh -vlan 0     # auto-read VLAN from manifest
 
 # ============================================================
 # ARGUMENT PARSING
@@ -34,8 +38,12 @@ if [[ -z "$DEFAULT_FH_VLAN" ]]; then
     echo "  The fronthaul VLAN ID is assigned by Emulab for the duru1t link."
     echo "  Find it in the experiment manifest under the 'duru1t' link vlantag attribute."
     echo ""
-    echo "  Usage: sudo bash setup-oai.sh -vlan <VLAN_ID>"
-    echo "  Example: sudo bash setup-oai.sh -vlan 134"
+    echo "  If you do not know the VLAN ID, pass 0 and the script will automatically"
+    echo "  read it from the Emulab experiment manifest using geni-get."
+    echo ""
+    echo "  Usage:   sudo bash setup-oai.sh -vlan <VLAN_ID>"
+    echo "  Known:   sudo bash setup-oai.sh -vlan 134"
+    echo "  Unknown: sudo bash setup-oai.sh -vlan 0"
     exit 1
 fi
 
@@ -293,10 +301,13 @@ echo "Patching dpdk_devices in $OAI_GNB_CONF..."
 sed -i "s|dpdk_devices = (\"[^\"]*\", \"[^\"]*\")|dpdk_devices = (\"${U_PLANE_PCI_BUS_ADD}\", \"${U_PLANE_PCI_BUS_ADD}\")|" "$OAI_GNB_CONF"
 echo "dpdk_devices patched: (\"$U_PLANE_PCI_BUS_ADD\", \"$U_PLANE_PCI_BUS_ADD\") (1 VF, same PCI for both planes)"
 
-# Read fronthaul VLAN from Emulab experiment manifest (duru1t link).
-# Falls back to DEFAULT_FH_VLAN if geni-get is unavailable or manifest parse fails.
-if command -v geni-get &>/dev/null; then
-    MANIFEST_VLAN=$(geni-get manifest 2>/dev/null | python3 - <<'PYEOF'
+# Determine fronthaul VLAN.
+# If -vlan 0 was passed (or no known value), read from Emulab experiment manifest.
+# Otherwise use the value provided via -vlan.
+if [[ "$DEFAULT_FH_VLAN" == "0" ]]; then
+    echo "VLAN=0 specified — attempting to read VLAN from experiment manifest..."
+    if command -v geni-get &>/dev/null; then
+        MANIFEST_VLAN=$(geni-get manifest 2>/dev/null | python3 - <<'PYEOF'
 import sys, xml.etree.ElementTree as ET
 try:
     root = ET.parse(sys.stdin).getroot()
@@ -312,16 +323,20 @@ except Exception as e:
     sys.stderr.write("manifest parse error: %s\n" % e)
 PYEOF
 )
-    if [[ "$MANIFEST_VLAN" =~ ^[0-9]+$ ]]; then
-        VLAN=$MANIFEST_VLAN
-        echo "Read VLAN $VLAN from experiment manifest."
+        if [[ "$MANIFEST_VLAN" =~ ^[0-9]+$ ]]; then
+            VLAN=$MANIFEST_VLAN
+            echo "Read VLAN $VLAN from experiment manifest."
+        else
+            echo "ERROR: Could not read VLAN from manifest. Please re-run with -vlan <VLAN_ID>."
+            exit 1
+        fi
     else
-        VLAN=$DEFAULT_FH_VLAN
-        echo "Could not read VLAN from manifest. Using default: $VLAN"
+        echo "ERROR: geni-get not available and no VLAN provided. Please re-run with -vlan <VLAN_ID>."
+        exit 1
     fi
 else
     VLAN=$DEFAULT_FH_VLAN
-    echo "geni-get not available. Using default VLAN: $VLAN"
+    echo "Using VLAN $VLAN from -vlan argument."
 fi
 
 # Patch VLAN into sriov_conf.sh so it uses the manifest-assigned value
