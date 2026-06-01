@@ -266,7 +266,17 @@ if [ ! -f $BUILDDIR/openairinterface5g/cmake_targets/ran_build/build/liboran_fhl
     cd $BUILDDIR/openairinterface5g/cmake_targets
     export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib64/pkgconfig/
     ./build_oai -I
-    ./build_oai --gNB --ninja -t oran_fhlib_5g --cmake-opt -Dxran_LOCATION=$BUILDDIR/phy/fhi_lib/lib
+    # Build OAI gNB with:
+    #   -t oran_fhlib_5g : O-RAN FHI 7.2 fronthaul library (eCPRI to Benetel O-RU)
+    #   -DOAI_E2=ON      : Enable built-in E2 agent for OSC near-RT RIC connectivity.
+    #
+    # E2AP version note: OAI v2.4.0 E2 agent supports E2AP v2, which is required
+    # by OSC RIC j-release (default in this profile). If you experience E2 setup
+    # failures, try OSC RIC f-release (also E2AP v2) by editing RICRELEASE in
+    # bin/setup-lib-ric.sh before running setup-ric.sh on cn5g.
+    ./build_oai --gNB --ninja -t oran_fhlib_5g \
+        --cmake-opt -Dxran_LOCATION=$BUILDDIR/phy/fhi_lib/lib \
+        --cmake-opt -DOAI_E2=ON
 else
     echo "OAI gNB already built, skipping."
 fi
@@ -364,6 +374,45 @@ echo "Running sriov_conf.sh to configure SR-IOV..."
 bash "$BINDIR/sriov_conf.sh"
 echo "SR-IOV configuration complete."
 
+# -----------------------------------------------------------------------
+# Routes to OSC near-RT RIC (on cn5g) Kubernetes subnets.
+# The E2 agent in OAI gNB connects to the E2 term ClusterIP (in 10.96.0.0/12)
+# or pod IP (in 10.233.0.0/16).  Both subnets are reached via cn5g (192.168.1.1)
+# on OAI_shared_VLAN (eth0, 192.168.1.2).
+# cn5g must be running setup-ric.sh and have IP masquerade enabled before
+# these routes are useful; but adding them here at build time is harmless.
+# -----------------------------------------------------------------------
+echo "Adding routes to Kubernetes subnets via cn5g (192.168.1.1) ..."
+ip route replace 10.233.0.0/16 via 192.168.1.1 dev eth0 || true
+ip route replace 10.96.0.0/12  via 192.168.1.1 dev eth0 || true
+
+# Persist routes via netplan so they survive a reboot.
+NETPLAN_ROUTES=/etc/netplan/99-ric-routes.yaml
+cat > $NETPLAN_ROUTES << 'NETPLAN_EOF'
+network:
+  version: 2
+  ethernets:
+    eth0:
+      routes:
+        - to: 10.233.0.0/16
+          via: 192.168.1.1
+        - to: 10.96.0.0/12
+          via: 192.168.1.1
+NETPLAN_EOF
+chmod 600 $NETPLAN_ROUTES
+netplan apply 2>/dev/null || true
+echo "Routes to RIC subnets configured."
+
+# -----------------------------------------------------------------------
+# After setup-ric.sh finishes on cn5g, run on cudu:
+#   source /local/repository/bin/get-ric-env.sh
+# to discover the live E2 term ClusterIP and patch the gNB conf.
+# Then start the OAI gNB:
+#   sudo /local/openairinterface5g/cmake_targets/ran_build/build/nr-softmodem \
+#       -O /local/repository/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf
+# -----------------------------------------------------------------------
+
 touch /home/ubuntu/Desktop/Test_OAI/.oai-setup-complete
-echo "Setup complete: DPDK, PTP, libxran, OAI gNB, and SR-IOV are ready."
+echo "Setup complete: DPDK, PTP, libxran, OAI gNB (with E2 agent), and SR-IOV are ready."
 echo "NOTE: Reboot required for CPU isolation (isolcpus) to take effect."
+echo "NOTE: Run get-ric-env.sh on cudu after RIC is up on cn5g to configure E2 agent IP."

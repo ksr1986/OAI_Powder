@@ -66,6 +66,15 @@ COTS_UE_IMG = "urn:publicid:IDN+emulab.net+image+PowderTeam:cots-jammy-image"
 COMP_MANAGER_ID = "urn:publicid:IDN+emulab.net+authority+cm"
 OPEN5GS_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "deploy-open5gs.sh")
 OAI_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "setup-oai.sh")
+RIC_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "setup-ric.sh")
+
+# Name for the shared VLAN connecting cn5g (Open5GS + OSC near-RT RIC) and cudu (OAI DU).
+# This single VLAN carries N2 (AMF<->gNB), N3 (UPF<->gNB), and E2 (near-RT RIC<->gNB) traffic.
+# It is distinct from the fronthaul VLAN (duru1t) which carries eCPRI between cudu and ru1.
+OAI_SHARED_VLAN_NAME = "OAI-shared-vlan"
+OAI_SHARED_VLAN_CN5G_IP  = "192.168.1.1"
+OAI_SHARED_VLAN_CUDU_IP  = "192.168.1.2"
+OAI_SHARED_VLAN_NETMASK  = "255.255.255.0"
 
 NODE_IDS = {
     #"ru1": "vmpru-b48-1",
@@ -117,17 +126,29 @@ request = pc.makeRequestRSpec()
 node_name = "cn5g"
 cn_node = request.RawPC(node_name)
 cn_node.component_manager_id = COMP_MANAGER_ID
-cn_node.hardware_type = "d710"  # auto-select any available d710
+# Upgraded from d710 to d430: cn5g now co-hosts Open5GS + Kubernetes + OSC near-RT RIC.
+# A d710 is too lightweight for this combined workload.
+cn_node.hardware_type = "d430"
 cn_node.disk_image = UBUNTU_IMG
 cn_if = cn_node.addInterface("{}-if".format(node_name))
-cn_if.addAddress(pg.IPv4Address("192.168.1.1", "255.255.255.0"))
-cn_link = request.Link("{}-link".format(node_name))
-cn_link.setNoBandwidthShaping()
-cn_link.addInterface(cn_if)
+cn_if.addAddress(pg.IPv4Address(OAI_SHARED_VLAN_CN5G_IP, OAI_SHARED_VLAN_NETMASK))
+# OAI_shared_VLAN: shared link between cn5g and cudu.
+# Carries N2/N3 (Open5GS <-> OAI gNB) and E2 (OSC near-RT RIC <-> OAI gNB E2 agent).
+OAI_shared_VLAN = request.Link(OAI_SHARED_VLAN_NAME)
+OAI_shared_VLAN.setNoBandwidthShaping()
+OAI_shared_VLAN.addInterface(cn_if)
 cn_node.addService(pg.Execute(shell="bash", command=OPEN5GS_DEPLOY_SCRIPT))
 cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/install-improved-iperf3.sh"))
 cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/start-iperf.pl"))
 cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/install-vsftpd.sh"))
+# OSC near-RT RIC (j-release) deployed via Kubernetes on cn5g.
+# setup-ric.sh installs Kubespray (single-node cluster) then the OSC RIC.
+cn_node.addService(pg.Execute(shell="bash", command=RIC_DEPLOY_SCRIPT))
+
+# Public IP pool for MetalLB on the cn5g Kubernetes cluster.
+# MetalLB uses this to expose the OSC RIC services externally if needed.
+cn5g_apool = ig.AddressPool("cn5g", 1)
+request.addResource(cn5g_apool)
 
 node_name = "cudu"
 cudu = request.RawPC(node_name)
@@ -139,8 +160,8 @@ cudu.hardware_type = "d760p"  # auto-select any available d760p
 cudu.disk_image = UBUNTU_IMG  #TODO: update image for OAI deployment if needed
 cudu_cn_if = cudu.addInterface("{}-cn-if".format(node_name))
 cudu_cn_if.component_id = "eth0"
-cudu_cn_if.addAddress(pg.IPv4Address("192.168.1.2", "255.255.255.0"))
-cn_link.addInterface(cudu_cn_if)
+cudu_cn_if.addAddress(pg.IPv4Address(OAI_SHARED_VLAN_CUDU_IP, OAI_SHARED_VLAN_NETMASK))
+OAI_shared_VLAN.addInterface(cudu_cn_if)
 
 duru1ofh = cudu.addInterface("{}ru1ofh".format(node_name))
 duru1ofh.component_id = "eth1"
