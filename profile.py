@@ -64,9 +64,7 @@ UBUNTU_IMG = "urn:publicid:IDN+emulab.net+image+emulab-ops//UBUNTU22-64-STD"
 UBUNTU_DPDK_IMG = "urn:publicid:IDN+emulab.net+image+DriveSafe:ubuntu2204-dpdk-iso"
 COTS_UE_IMG = "urn:publicid:IDN+emulab.net+image+PowderTeam:cots-jammy-image"
 COMP_MANAGER_ID = "urn:publicid:IDN+emulab.net+authority+cm"
-# DEFAULT_SRSRAN_HASH = "cdc93a60920dfbb2727910f84966068b8e75004d"  # late sept 2025 [SRSRAN - DISABLED]
 OPEN5GS_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "deploy-open5gs.sh")
-# SRSRAN_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "deploy-srsran.sh")  # [SRSRAN - DISABLED]
 OAI_DEPLOY_SCRIPT = os.path.join(BIN_PATH, "setup-oai.sh")
 
 NODE_IDS = {
