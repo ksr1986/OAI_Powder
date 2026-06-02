@@ -3,13 +3,38 @@ set -euo pipefail
 # SR-IOV setup for OAI gNB fronthaul (eCPRI over DPDK).
 # Standalone: does not rely on common.sh.
 # Must be run as root (sudo). Safe to re-run.
+#
+# Usage: sudo bash sriov_conf.sh -vlan <VLAN_ID>
+#   -vlan <VLAN_ID>  Fronthaul VLAN ID assigned by Emulab for the duru1t link.
+
+# ============================================================
+# ARGUMENT PARSING
+# ============================================================
+DEFAULT_FH_VLAN=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -vlan)
+            DEFAULT_FH_VLAN="${2:-}"
+            shift 2 || shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: sudo bash sriov_conf.sh -vlan <VLAN_ID>"
+            exit 1
+            ;;
+    esac
+done
+
+if [[ -z "$DEFAULT_FH_VLAN" ]]; then
+    echo "ERROR: -vlan <VLAN_ID> is required."
+    echo "  The fronthaul VLAN ID is assigned by Emulab for the duru1t link."
+    echo "  Usage: sudo bash sriov_conf.sh -vlan <VLAN_ID>"
+    exit 1
+fi
 
 # ============================================================
 # CONFIGURATION — edit these if hardware changes
 # ============================================================
-# Fronthaul VLAN (decimal; must match RU config which stores it as hex)
-DEFAULT_FH_VLAN=134
-
 # SR-IOV physical function interface (eCPRI DPDK port)
 IF_NAME=eno12409
 # VF interface names created by the kernel from the PF
@@ -67,8 +92,8 @@ fi
 #     VLAN=$DEFAULT_FH_VLAN
 #     echo "Could not read VLAN from manifest. Using default: $VLAN"
 # fi
-VLAN=134
-echo "Using hardcoded VLAN $VLAN."
+VLAN=$DEFAULT_FH_VLAN
+echo "Using fronthaul VLAN $VLAN (from -vlan)."
 
 # ============================================================
 # HUGEPAGES — allocate at runtime so DPDK can initialise
