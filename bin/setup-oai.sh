@@ -65,7 +65,8 @@ DU_U_PLANE_MAC_ADD=30:3e:a7:1a:8e:49
 # RU MAC address (used in OAI gNB conf ru_addr)
 RU_MAC=8c:1f:64:d1:15:0e
 
-# SR-IOV physical function interface (eCPRI DPDK port)
+# SR-IOV physical function interface (eCPRI DPDK port).
+# Also used for PTP (ptp4l/phc2sys) since fronthaul and PTP share this NIC.
 IF_NAME=eno12409
 IF_VF0=eno12409v0
 #IF_VF1=eno12409v1  # only 1 VF used
@@ -182,7 +183,7 @@ echo "tuned realtime-oai profile active."
 # ============================================================
 # 5. PTP SETUP (start early so sync begins during builds)
 # ============================================================
-IFACE=$FH_PTP_IFACE
+IFACE=$IF_NAME
 if ! ip link show "$IFACE" >/dev/null 2>&1; then
     echo "WARNING: PTP interface $IFACE does not exist. Skipping PTP setup."
 else

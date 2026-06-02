@@ -80,4 +80,11 @@ sudo netfilter-persistent save 2>/dev/null || sudo iptables-save | sudo tee /etc
 
 touch /local/setup/setup-ric-done
 echo "setup-ric.sh complete. OSC near-RT RIC (j-release) is deployed on cn5g."
-echo "Run /local/repository/bin/get-ric-env.sh on cudu to discover the E2 term IP."
+echo ""
+echo "=============================================================="
+echo "Next steps: run the following scripts ON THE cudu (DU) NODE in"
+echo "this exact order before starting the OAI gNB:"
+echo "  1. /local/repository/bin/sriov_conf.sh"
+echo "  2. /local/repository/bin/setup-oai.sh"
+echo "  3. /local/repository/bin/get-ric-env.sh"
+echo "=============================================================="
