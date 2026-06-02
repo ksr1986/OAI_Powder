@@ -61,7 +61,18 @@ fi
 # (192.168.1.1). OAI's E2 agent dials the standard E2AP SCTP port 36421, so we
 # pin nodePort=36421 (within the configured 2000-36767 range) while keeping the
 # pod's internal targetPort at 36422.
+#
+# kube-proxy runs in ipvs mode; for it to DNAT an SCTP NodePort the host needs
+# the SCTP conntrack modules, which are not loaded by default on the stock
+# Ubuntu image. Without them the gNB's SCTP INIT reaches cn5g but is never
+# forwarded to the e2term pod, so no E2 association forms.
+# NOTE: not yet verified on hardware; see commit message.
 # -----------------------------------------------------------------------
+sudo modprobe sctp 2>/dev/null || true
+sudo modprobe nf_conntrack_proto_sctp 2>/dev/null || true
+# Persist across reboots so the NodePort keeps working after a node restart.
+printf 'sctp\nnf_conntrack_proto_sctp\n' | sudo tee /etc/modules-load.d/sctp.conf >/dev/null
+
 kubectl -n ricplt patch svc service-ricplt-e2term-sctp-alpha --type merge -p \
     '{"spec":{"type":"NodePort","ports":[{"name":"sctp-alpha","protocol":"SCTP","port":36422,"targetPort":36422,"nodePort":36421}]}}'
 if [ $? -ne 0 ]; then

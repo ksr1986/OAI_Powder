@@ -8,6 +8,12 @@
 # Path to our installed repository directory
 REPO=/local/repository
 
+# This script writes to /etc, manages systemd services, and installs packages.
+if [ "$(id -u)" -ne 0 ]; then
+  echo "ERROR: setup-ptp.sh must be run as root (use sudo)."
+  exit 1
+fi
+
 if [ ! -x /usr/sbin/ptp4l ]; then
   pkgs="$pkgs linuxptp"
 fi
@@ -17,8 +23,8 @@ if [ -n "$pkgs" ]; then
   apt-get install -y --no-install-recommends $pkgs >>/tmp/apt.log 2>&1
 fi
 
-# Figure out which interface has PTP enabled
-IF_NAME=eno12409
+# Fronthaul interface used for PTP (same NIC as the eCPRI port on cudu).
+IFACE=eno12409
 echo "Configuring ptp4l on $IFACE..."
 
 # Setup PTP config
