@@ -121,7 +121,14 @@ for node in $NODES ; do
     else
 	accessip=`getcontrolip $node`
     fi
-    echo "$node ansible_host=$mgmtip ip=$dataip access_ip=$accessip" >> $INV
+    # Single-node cluster: ansible runs on cn5g and configures cn5g itself.
+    # SSH-to-self over the OAI-shared-vlan IP (192.168.1.1) is rejected by
+    # Emulab hostbased auth, so force a local connection for the local node.
+    conn=""
+    if [ "$node" = "$NODEID" ]; then
+	conn=" ansible_connection=local"
+    fi
+    echo "$node ansible_host=$mgmtip ip=$dataip access_ip=$accessip$conn" >> $INV
 
     touch $INVDIR/host_vars/$node.yml
 done

@@ -5,24 +5,9 @@
 # (to sync with switch) and `phc2sys` (to sync system clock with PTP).
 # 
 
-# Maybe someday selectable, but probably not
-PROFILE="G8275-1"
-
 # Path to our installed repository directory
-REPO=~/Desktop/Test_OAI/
+REPO=/local/repository
 
-# Sanity checks
-if [ $UID -ne 0 ]; then
-  echo "Startup must be run as root (not $UID)"
-  exit 1
-fi
-
-# Install any needed packages
-pkgs=""
-if [ ! -f /usr/share/perl5/XML/Simple.pm ]; then
-  # XXX for parsing the manifest in getmanifest
-  pkgs="$pkgs libxml-simple-perl"
-fi
 if [ ! -x /usr/sbin/ptp4l ]; then
   pkgs="$pkgs linuxptp"
 fi
@@ -33,19 +18,12 @@ if [ -n "$pkgs" ]; then
 fi
 
 # Figure out which interface has PTP enabled
-IFACE=`$REPO/bin/getptpiface`
-if [ $? -ne 0 ]; then
-  echo "Cannot determine PTP interface."
-  exit 1
-fi
-
+IF_NAME=eno12409
 echo "Configuring ptp4l on $IFACE..."
 
 # Setup PTP config
 PTPCONF=/etc/linuxptp/ptp4l.conf
-if [ ! -f "$PTPCONF" ] || ! cmp -s $PTPCONF $REPO/etc/ptp4l/ptp4l-$PROFILE.conf; then
-  cp $REPO/etc/ptp4l/ptp4l-$PROFILE.conf $PTPCONF
-fi
+cp $REPO/etc/ptp4l/ptp.conf $PTPCONF
 
 echo "Configuring phc2sys to use PHC on $IFACE..."
 

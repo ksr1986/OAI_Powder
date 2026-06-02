@@ -107,7 +107,10 @@ KUBEPODSSUBNET="10.233.0.0/16"
 KUBESERVICEADDRESSES="10.96.0.0/12"
 KUBEDOMETALLB=1
 KUBEACCESSIP="mgmt"
-KUBEFEATUREGATES="[EphemeralContainers=true]"
+# EphemeralContainers went GA in k8s 1.25 and the feature gate was REMOVED in
+# 1.27. Kubespray release-2.25 deploys k8s 1.29, where passing this gate makes
+# the kubelet refuse to start ("unrecognized feature gate"). Leave empty.
+KUBEFEATUREGATES=""
 KUBELETCUSTOMFLAGS=""
 KUBELETMAXPODS=0
 # Single-node cluster: master must also be a worker.

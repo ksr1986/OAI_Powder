@@ -55,6 +55,20 @@ if [ $? -ne 0 ]; then
 fi
 
 # -----------------------------------------------------------------------
+# Step 3.5: Expose the E2 termination on a fixed NodePort (36421).
+# cudu (the OAI DU) is NOT a Kubernetes node, so it cannot reach the E2 term
+# ClusterIP. It reaches the E2 term via this NodePort on cn5g's node IP
+# (192.168.1.1). OAI's E2 agent dials the standard E2AP SCTP port 36421, so we
+# pin nodePort=36421 (within the configured 2000-36767 range) while keeping the
+# pod's internal targetPort at 36422.
+# -----------------------------------------------------------------------
+kubectl -n ricplt patch svc service-ricplt-e2term-sctp-alpha --type merge -p \
+    '{"spec":{"type":"NodePort","ports":[{"name":"sctp-alpha","protocol":"SCTP","port":36422,"targetPort":36422,"nodePort":36421}]}}'
+if [ $? -ne 0 ]; then
+    echo "WARNING: could not pin e2term NodePort to 36421; check the service name/ports."
+fi
+
+# -----------------------------------------------------------------------
 # Step 4: Enable IP forwarding and masquerade so that cudu (192.168.1.2)
 # can reach the Kubernetes pod subnet (10.233.0.0/16) and service subnet
 # (10.96.0.0/12) routed through cn5g (192.168.1.1) on OAI_shared_VLAN.
