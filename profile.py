@@ -104,6 +104,26 @@ for k, v in MATRIX_GRAPH.items():
 
 pc = portal.Context()
 
+rus = [
+    ("benetel_matrix", "Benetel ran650 (RF matrix)"),
+    ("benetel_flux", "Benetel ran550 (flux space)"),
+    ("benetel_meb1", "Benetel ran650 (MEB rooftop sector 1)"),
+]
+pc.defineParameter(
+    name="ru",
+    description="Which RU to deploy.",
+    typ=portal.ParameterType.STRING,
+    defaultValue=rus[0],
+    legalValues=rus,
+)
+
+pc.defineParameter(
+    name="arfcn",
+    description="ARFCN",
+    typ=portal.ParameterType.INTEGER,
+    defaultValue=628000,
+)
+
 node_types = [
     ("d760p", "Emulab, d760"),
     ("d430", "Emulab, d430"),
@@ -177,20 +197,33 @@ cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-a
 cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-ru-vlan.sh"))
 
 # collect node objects for RF matrix
-matrix_nodes = {}
-ru_mimo_mode = "1_2_3_4_4x2"
+if "benetel_matrix" in params.ru:
+    matrix_nodes = {}
 
+ru_mimo_mode = "1_2_3_4_4x2"
 du_mac_addr ="30:3e:a7:1a:8e:49"
-ru_type = "bt-ru650"
-nr_arfcn = 643334 #Corresponds to 3750 MHz
+ru_type = "bt-ru550" if "flux" in params.ru else "bt-ru650"
+nr_arfcn = params.arfcn
+# nr_arfcn = 643334 #Corresponds to 3750 MHz
 #nr_arfcn = 3750 #Corresponds to 3750 MHz
 bandwidth_mhz = 40 #Bandwidth in MHz
 # benetel RU 1
 node_name = "ru1"
 #ru1 = request.RawPC(node_name)
-ru1 = request.COTSRU(client_id=node_name, hardware_type=ru_type, arfcn=nr_arfcn, bandwidth=bandwidth_mhz, mimo_mode=ru_mimo_mode, du_mac = du_mac_addr,component_id=NODE_IDS[node_name])
+if "benetel_matrix" in params.ru:
+    component_id = NODE_IDS[node_name]
+elif "benetel_flux" in params.ru:
+    component_id = "flux-bru"
+elif "benetel_meb1" in params.ru:
+    component_id = "bru-650-2"
+
+ru1 = request.COTSRU(client_id=node_name,
+                     hardware_type=ru_type,
+                     arfcn=nr_arfcn,
+                     bandwidth=bandwidth_mhz,
+                     mimo_mode=ru_mimo_mode, du_mac=du_mac_addr,
+                     component_id=component_id)
 ru1.component_manager_id = COMP_MANAGER_ID
-#ru1.component_id = NODE_IDS[node_name]
 ru1duofh = ru1.addInterface("{}duofh".format(node_name))
 ru1duofh.component_id = "eth0"
 ru1duofh.PTP()
@@ -198,30 +231,32 @@ ru1duofh.SyncE()
 duru1t = request.Link("duru1t", members=[duru1ofh, ru1duofh])
 duru1t.vlan_tagging = True  # Let Emulab auto-configure VLAN on fronthaul link
 # duru1t.setVlanTag(params.vlan_id_ru1)
-ru1.Desire("rf-controlled", 1)
-matrix_nodes[node_name] = ru1
+if "benetel_matrix" in params.ru:
+    ru1.Desire("rf-controlled", 1)
+    matrix_nodes[node_name] = ru1
 
-# COTS UEs
-node_name = "ue1"
-ue1 = request.RawPC(node_name)
-ue1.component_manager_id = COMP_MANAGER_ID
-ue1.component_id = NODE_IDS[node_name]
-ue1.disk_image = COTS_UE_IMG
-ue1.Desire("rf-controlled", 1)
-ue1.addService(pg.Execute(shell="bash", command="/local/repository/bin/module-airplane.sh"))
-ue1.addService(pg.Execute(shell="bash", command="/local/repository/bin/setup-cots-ue.sh internet"))
-matrix_nodes[node_name] = ue1
+if "benetel_matrix" in params.ru:
+    # COTS UEs
+    node_name = "ue1"
+    ue1 = request.RawPC(node_name)
+    ue1.component_manager_id = COMP_MANAGER_ID
+    ue1.component_id = NODE_IDS[node_name]
+    ue1.disk_image = COTS_UE_IMG
+    ue1.Desire("rf-controlled", 1)
+    ue1.addService(pg.Execute(shell="bash", command="/local/repository/bin/module-airplane.sh"))
+    ue1.addService(pg.Execute(shell="bash", command="/local/repository/bin/setup-cots-ue.sh internet"))
+    matrix_nodes[node_name] = ue1
 
 
-rf_ifaces = {}
-for node_name, node in matrix_nodes.items():
-    for rf_iface_name in RF_IFACES[node_name].values():
-        rf_ifaces[rf_iface_name] = node.addInterface(rf_iface_name)
+    rf_ifaces = {}
+    for node_name, node in matrix_nodes.items():
+        for rf_iface_name in RF_IFACES[node_name].values():
+            rf_ifaces[rf_iface_name] = node.addInterface(rf_iface_name)
 
-for rf_link_name, rf_iface_names in RF_LINK_NAMES.items():
-    rf_link = request.RFLink(rf_link_name)
-    for iface_name in rf_iface_names:
-        rf_link.addInterface(rf_ifaces[iface_name])
+    for rf_link_name, rf_iface_names in RF_LINK_NAMES.items():
+        rf_link = request.RFLink(rf_link_name)
+        for iface_name in rf_iface_names:
+            rf_link.addInterface(rf_ifaces[iface_name])
 
 
 tour = ig.Tour()
