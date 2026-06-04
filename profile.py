@@ -40,7 +40,7 @@ Check `ptp4l` and `phc2sys` status on `cudu` before starting gNB, and verify O-R
 
 BIN_PATH = "/local/repository/bin"
 ETC_PATH = "/local/repository/etc"
-UBUNTU_IMG = "urn:publicid:IDN+emulab.net+image+emulab-ops//UBUNTU22-64-STD"
+UBUNTU_IMG = "urn:publicid:IDN+emulab.net+image+emulab-ops//UBUNTU24-64-STD"
 UBUNTU_DPDK_IMG = "urn:publicid:IDN+emulab.net+image+DriveSafe:ubuntu2204-dpdk-iso"
 COTS_UE_IMG = "urn:publicid:IDN+emulab.net+image+PowderTeam:cots-jammy-image"
 COMP_MANAGER_ID = "urn:publicid:IDN+emulab.net+authority+cm"
@@ -137,7 +137,6 @@ OAI_shared_VLAN = request.Link(OAI_SHARED_VLAN_NAME)
 OAI_shared_VLAN.setNoBandwidthShaping()
 OAI_shared_VLAN.addInterface(cn_if)
 
-# the Open5GS core (incl. the AMF); setup-ric.sh deploys the near-RT RIC.
 #cn_node.addService(pg.Execute(shell="bash", command=OPEN5GS_DEPLOY_SCRIPT))
 #cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/install-improved-iperf3.sh"))
 #cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/start-iperf.pl"))
