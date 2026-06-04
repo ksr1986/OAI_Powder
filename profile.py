@@ -15,11 +15,15 @@ import geni.rspec.emulab.cotsru as cotsru
 # TODO: Update tourDescription for OAI deployment
 # tourDescription was: "### srsRAN 5G, VVDN COTS O-RUs, COTS UE in RF matrix"
 tourDescription = """
-### OAI 5G gNB, Benetel O-RU: CN + CUDU + RU + UE topology
+### OAI 5G gNB, Benetel O-RU: CN+RIC + CUDU + RU topology (no UE)
 """
 
 tourInstructions = """
-CN + CUDU + RU + UE (nuc16) topology.
+CN+RIC + CUDU + RU topology (no UE).
+
+NOTE: In this branch the setup scripts/services on `cn5g` and `cudu` are NOT
+run automatically at startup. The repository is still cloned to
+`/local/repository` on each node; run the scripts manually (see `bin/`).
 
 #### Start the OAI gNB on `cudu`:
 ```
@@ -27,30 +31,6 @@ sudo /local/openairinterface5g/cmake_targets/ran_build/build/nr-softmodem -O /lo
 ```
 
 Check `ptp4l` and `phc2sys` status on `cudu` before starting gNB, and verify O-RU status.
-
-#### On `ue1` (nuc16), connect UE:
-```
-sudo quectel-CM -s internet -4
-```
-
-In another terminal on `ue1`:
-```
-sudo minicom -D /dev/ttyUSB2
-```
-
-AT commands for UE control (within minicom):
-```
-# bring UE online
-at+cfun=1
-
-# put UE in airplane mode
-at+cfun=4
-
-# check serving cell
-at+qeng="servingcell"
-```
-
-After attach, UE should be able to ping gateway at 10.45.0.1.
 
 # OAI gNB conf file: `/local/repository/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf`
 
@@ -146,8 +126,7 @@ request = pc.makeRequestRSpec()
 node_name = "cn5g"
 cn_node = request.RawPC(node_name)
 cn_node.component_manager_id = COMP_MANAGER_ID
-# Upgraded from d710 to d430: cn5g now co-hosts Open5GS + Kubernetes + OSC near-RT RIC.
-# A d710 is too lightweight for this combined workload.
+
 cn_node.hardware_type = "d430"
 cn_node.disk_image = UBUNTU_IMG
 cn_if = cn_node.addInterface("{}-if".format(node_name))
@@ -157,13 +136,15 @@ cn_if.addAddress(pg.IPv4Address(OAI_SHARED_VLAN_CN5G_IP, OAI_SHARED_VLAN_NETMASK
 OAI_shared_VLAN = request.Link(OAI_SHARED_VLAN_NAME)
 OAI_shared_VLAN.setNoBandwidthShaping()
 OAI_shared_VLAN.addInterface(cn_if)
-cn_node.addService(pg.Execute(shell="bash", command=OPEN5GS_DEPLOY_SCRIPT))
-cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/install-improved-iperf3.sh"))
-cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/start-iperf.pl"))
-cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/install-vsftpd.sh"))
+
+# the Open5GS core (incl. the AMF); setup-ric.sh deploys the near-RT RIC.
+#cn_node.addService(pg.Execute(shell="bash", command=OPEN5GS_DEPLOY_SCRIPT))
+#cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/install-improved-iperf3.sh"))
+#cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/start-iperf.pl"))
+#cn_node.addService(pg.Execute(shell="bash", command="/local/repository/bin/install-vsftpd.sh"))
 # OSC near-RT RIC (j-release) deployed via Kubernetes on cn5g.
 # setup-ric.sh installs Kubespray (single-node cluster) then the OSC RIC.
-cn_node.addService(pg.Execute(shell="bash", command=RIC_DEPLOY_SCRIPT))
+#cn_node.addService(pg.Execute(shell="bash", command=RIC_DEPLOY_SCRIPT))
 
 # Public IP pool for MetalLB on the cn5g Kubernetes cluster.
 # MetalLB uses this to expose the OSC RIC services externally if needed.
@@ -190,15 +171,15 @@ duru1ofh.PTP()
 
 
 # Add OAI gNB deploy service here
-cudu.addService(pg.Execute(shell="bash", command=OAI_DEPLOY_SCRIPT))
+#cudu.addService(pg.Execute(shell="bash", command=OAI_DEPLOY_SCRIPT))
 # setup-ptp.sh is now merged into setup-oai.sh
-cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-attens bru1 0"))
+#cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-attens bru1 0"))
 #cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-attens bru2 95"))
-cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-ru-vlan.sh"))
+#cudu.addService(pg.Execute(shell="bash", command="/local/repository/bin/update-ru-vlan.sh"))
 
-# collect node objects for RF matrix
-if "benetel_matrix" in params.ru:
-    matrix_nodes = {}
+# Pipeline is CN+RIC -> OAI DU -> RU (no UE).
+#if "benetel_matrix" in params.ru:
+#    matrix_nodes = {}
 
 ru_mimo_mode = "1_2_3_4_4x2"
 du_mac_addr ="30:3e:a7:1a:8e:49"
@@ -233,30 +214,6 @@ duru1t.vlan_tagging = True  # Let Emulab auto-configure VLAN on fronthaul link
 # duru1t.setVlanTag(params.vlan_id_ru1)
 if "benetel_matrix" in params.ru:
     ru1.Desire("rf-controlled", 1)
-    matrix_nodes[node_name] = ru1
-
-if "benetel_matrix" in params.ru:
-    # COTS UEs
-    node_name = "ue1"
-    ue1 = request.RawPC(node_name)
-    ue1.component_manager_id = COMP_MANAGER_ID
-    ue1.component_id = NODE_IDS[node_name]
-    ue1.disk_image = COTS_UE_IMG
-    ue1.Desire("rf-controlled", 1)
-    ue1.addService(pg.Execute(shell="bash", command="/local/repository/bin/module-airplane.sh"))
-    ue1.addService(pg.Execute(shell="bash", command="/local/repository/bin/setup-cots-ue.sh internet"))
-    matrix_nodes[node_name] = ue1
-
-
-    rf_ifaces = {}
-    for node_name, node in matrix_nodes.items():
-        for rf_iface_name in RF_IFACES[node_name].values():
-            rf_ifaces[rf_iface_name] = node.addInterface(rf_iface_name)
-
-    for rf_link_name, rf_iface_names in RF_LINK_NAMES.items():
-        rf_link = request.RFLink(rf_link_name)
-        for iface_name in rf_iface_names:
-            rf_link.addInterface(rf_ifaces[iface_name])
 
 
 tour = ig.Tour()

@@ -290,73 +290,69 @@ fi
 # ============================================================
 # 8. SR-IOV SETUP
 # ============================================================
-echo "Running SR-IOV setup via sriov_conf.sh..."
-bash "$BINDIR/sriov_conf.sh"
-if [ $? -ne 0 ]; then
-    echo "ERROR: sriov_conf.sh failed. Aborting."
-    exit 1
-fi
+#chmod 770 "$BINDIR/sriov_conf.sh"
+#echo "Permissions set: chmod 770 sriov_conf.sh"
 
-# Read the VF PCI addresses discovered by sriov_conf.sh
-SRIOV_STATE_FILE=/run/oai-sriov-pci.env
-if [ -f "$SRIOV_STATE_FILE" ]; then
-    source "$SRIOV_STATE_FILE"
-    echo "Loaded VF PCI address: U-plane=$U_PLANE_PCI_BUS_ADD (used for both U and C plane)"
-else
-    echo "ERROR: $SRIOV_STATE_FILE not found after sriov_conf.sh. Cannot patch gNB conf."
-    exit 1
-fi
+# # Determine fronthaul VLAN.
+# # If -vlan 0 was passed (or no known value), read from Emulab experiment manifest.
+# # Otherwise use the value provided via -vlan.
+# if [[ "$DEFAULT_FH_VLAN" == "0" ]]; then
+#     echo "VLAN=0 specified — attempting to read VLAN from experiment manifest..."
+#     if command -v geni-get &>/dev/null; then
+#         MANIFEST_VLAN=$(geni-get manifest 2>/dev/null | python3 - <<'PYEOF'
+# import sys, xml.etree.ElementTree as ET
+# try:
+#     root = ET.parse(sys.stdin).getroot()
+#     ns = root.tag.split('}')[0].lstrip('{') if '}' in root.tag else ''
+#     pfx = ('{%s}' % ns) if ns else ''
+#     for link in root.iter('%slink' % pfx):
+#         if link.get('client_id') == 'duru1t':
+#             vlan = link.get('vlantag', '').strip()
+#             if vlan:
+#                 print(vlan)
+#             break
+# except Exception as e:
+#     sys.stderr.write("manifest parse error: %s\n" % e)
+# PYEOF
+# )
+#         if [[ "$MANIFEST_VLAN" =~ ^[0-9]+$ ]]; then
+#             VLAN=$MANIFEST_VLAN
+#             echo "Read VLAN $VLAN from experiment manifest."
+#         else
+#             echo "ERROR: Could not read VLAN from manifest. Please re-run with -vlan <VLAN_ID>."
+#             exit 1
+#         fi
+#     else
+#         echo "ERROR: geni-get not available and no VLAN provided. Please re-run with -vlan <VLAN_ID>."
+#         exit 1
+#     fi
+# else
+#     VLAN=$DEFAULT_FH_VLAN
+#     echo "Using VLAN $VLAN from -vlan argument."
+# fi
+#
+#
+# if ! bash "$BINDIR/sriov_conf.sh" -vlan "$VLAN"; then
+#     echo "ERROR: sriov_conf.sh failed. Aborting."
+#     exit 1
+# fi
+#
+# # Read the VF PCI addresses discovered by sriov_conf.sh
+# SRIOV_STATE_FILE=/run/oai-sriov-pci.env
+# if [ -f "$SRIOV_STATE_FILE" ]; then
+#     source "$SRIOV_STATE_FILE"
+#     echo "Loaded VF PCI address: U-plane=$U_PLANE_PCI_BUS_ADD (used for both U and C plane)"
+# else
+#     echo "ERROR: $SRIOV_STATE_FILE not found after sriov_conf.sh. Cannot patch gNB conf."
+#     exit 1
+# fi
+#
+# # Patch dpdk_devices in OAI gNB conf with the real VF PCI addresses
+# echo "Patching dpdk_devices in $OAI_GNB_CONF..."
+# sed -i "s|dpdk_devices = (\"[^\"]*\", \"[^\"]*\")|dpdk_devices = (\"${U_PLANE_PCI_BUS_ADD}\", \"${U_PLANE_PCI_BUS_ADD}\")|" "$OAI_GNB_CONF"
+# echo "dpdk_devices patched: (\"$U_PLANE_PCI_BUS_ADD\", \"$U_PLANE_PCI_BUS_ADD\") (1 VF, same PCI for both planes)"
 
-# Patch dpdk_devices in OAI gNB conf with the real VF PCI addresses
-echo "Patching dpdk_devices in $OAI_GNB_CONF..."
-sed -i "s|dpdk_devices = (\"[^\"]*\", \"[^\"]*\")|dpdk_devices = (\"${U_PLANE_PCI_BUS_ADD}\", \"${U_PLANE_PCI_BUS_ADD}\")|" "$OAI_GNB_CONF"
-echo "dpdk_devices patched: (\"$U_PLANE_PCI_BUS_ADD\", \"$U_PLANE_PCI_BUS_ADD\") (1 VF, same PCI for both planes)"
 
-# Determine fronthaul VLAN.
-# If -vlan 0 was passed (or no known value), read from Emulab experiment manifest.
-# Otherwise use the value provided via -vlan.
-if [[ "$DEFAULT_FH_VLAN" == "0" ]]; then
-    echo "VLAN=0 specified — attempting to read VLAN from experiment manifest..."
-    if command -v geni-get &>/dev/null; then
-        MANIFEST_VLAN=$(geni-get manifest 2>/dev/null | python3 - <<'PYEOF'
-import sys, xml.etree.ElementTree as ET
-try:
-    root = ET.parse(sys.stdin).getroot()
-    ns = root.tag.split('}')[0].lstrip('{') if '}' in root.tag else ''
-    pfx = ('{%s}' % ns) if ns else ''
-    for link in root.iter('%slink' % pfx):
-        if link.get('client_id') == 'duru1t':
-            vlan = link.get('vlantag', '').strip()
-            if vlan:
-                print(vlan)
-            break
-except Exception as e:
-    sys.stderr.write("manifest parse error: %s\n" % e)
-PYEOF
-)
-        if [[ "$MANIFEST_VLAN" =~ ^[0-9]+$ ]]; then
-            VLAN=$MANIFEST_VLAN
-            echo "Read VLAN $VLAN from experiment manifest."
-        else
-            echo "ERROR: Could not read VLAN from manifest. Please re-run with -vlan <VLAN_ID>."
-            exit 1
-        fi
-    else
-        echo "ERROR: geni-get not available and no VLAN provided. Please re-run with -vlan <VLAN_ID>."
-        exit 1
-    fi
-else
-    VLAN=$DEFAULT_FH_VLAN
-    echo "Using VLAN $VLAN from -vlan argument."
-fi
-
-# Patch VLAN into sriov_conf.sh so it uses the manifest-assigned value
-sed -i "s/^VLAN=.*/VLAN=${VLAN}/" "$BINDIR/sriov_conf.sh"
-echo "sriov_conf.sh patched with VLAN=${VLAN}"
-
-# Ensure sriov_conf.sh is executable
-chmod 770 "$BINDIR/sriov_conf.sh"
-echo "Permissions set: chmod 770 sriov_conf.sh"
 
 # ============================================================
 # 9. INSTALL SYSTEMD SERVICES
@@ -369,11 +365,6 @@ systemctl daemon-reload
 systemctl enable oai-sriov.service
 echo "oai-sriov.service installed and enabled (runs sriov_conf.sh on every boot)."
 echo "oai-gnb.service installed (start manually: systemctl start oai-gnb)."
-
-# Run SR-IOV configuration immediately now that VLAN is patched in
-echo "Running sriov_conf.sh to configure SR-IOV..."
-bash "$BINDIR/sriov_conf.sh"
-echo "SR-IOV configuration complete."
 
 # -----------------------------------------------------------------------
 # Routes to OSC near-RT RIC (on cn5g) Kubernetes subnets.

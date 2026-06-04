@@ -142,7 +142,7 @@ printf 'U_PLANE_PCI_BUS_ADD=%s\nC_PLANE_PCI_BUS_ADD=%s\n' \
 echo "PCI state written to $SRIOV_STATE_FILE"
 
 # Patch dpdk_devices in the gNB conf — same PCI address for both U and C plane (1 VF)
-GNB_CONF=/home/ubuntu/Desktop/Test_OAI/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf
+GNB_CONF=/local/repository/etc/oai/gnb.sa.band78.106prb.fhi72.4x2.DDDSU.RAN650.conf
 if [ -f "$GNB_CONF" ]; then
     sed -i "s|dpdk_devices = (\"[^\"]*\", \"[^\"]*\")|dpdk_devices = (\"${U_PLANE_PCI_BUS_ADD}\", \"${U_PLANE_PCI_BUS_ADD}\")|" "$GNB_CONF"
     echo "Patched dpdk_devices in $GNB_CONF: (\"$U_PLANE_PCI_BUS_ADD\", \"$U_PLANE_PCI_BUS_ADD\")"
