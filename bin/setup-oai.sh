@@ -359,11 +359,11 @@ fi
 # ============================================================
 echo "Installing systemd services..."
 cp $ETCDIR/services/phc2sys@.service /lib/systemd/system/phc2sys@.service
-cp $ETCDIR/services/oai-sriov.service /etc/systemd/system/oai-sriov.service
+#cp $ETCDIR/services/oai-sriov.service /etc/systemd/system/oai-sriov.service
 cp $ETCDIR/services/oai-gnb.service /etc/systemd/system/oai-gnb.service
 systemctl daemon-reload
-systemctl enable oai-sriov.service
-echo "oai-sriov.service installed and enabled (runs sriov_conf.sh on every boot)."
+#systemctl enable oai-sriov.service
+echo "oai-sriov.service NOT installed/enabled: run sriov_conf.sh -vlan <VLAN_ID> manually after reboot."
 echo "oai-gnb.service installed (start manually: systemctl start oai-gnb)."
 
 # -----------------------------------------------------------------------
