@@ -40,7 +40,8 @@ Check `ptp4l` and `phc2sys` status on `cudu` before starting gNB, and verify O-R
 
 BIN_PATH = "/local/repository/bin"
 ETC_PATH = "/local/repository/etc"
-UBUNTU_IMG = "urn:publicid:IDN+emulab.net+image+emulab-ops//UBUNTU24-64-STD"
+UBUNTU_IMG_24 = "urn:publicid:IDN+emulab.net+image+emulab-ops//UBUNTU24-64-STD"
+UBUNTU_IMG = "urn:publicid:IDN+emulab.net+image+emulab-ops//UBUNTU22-64-STD"
 UBUNTU_DPDK_IMG = "urn:publicid:IDN+emulab.net+image+DriveSafe:ubuntu2204-dpdk-iso"
 COTS_UE_IMG = "urn:publicid:IDN+emulab.net+image+PowderTeam:cots-jammy-image"
 COMP_MANAGER_ID = "urn:publicid:IDN+emulab.net+authority+cm"
@@ -157,7 +158,7 @@ cudu.hardware_type = "d760p"  # auto-select any available d760p
 
 #We can install the regular ubuntu image and then install DPDK as part of the OAI deployment script.
 
-cudu.disk_image = UBUNTU_IMG  #TODO: update image for OAI deployment if needed
+cudu.disk_image = UBUNTU_IMG_24  #TODO: update image for OAI deployment if needed
 cudu_cn_if = cudu.addInterface("{}-cn-if".format(node_name))
 cudu_cn_if.component_id = "eth0"
 cudu_cn_if.addAddress(pg.IPv4Address(OAI_SHARED_VLAN_CUDU_IP, OAI_SHARED_VLAN_NETMASK))
